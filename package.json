@@ -1,0 +1,18 @@
+{
+  "name": "claude-codex-session-manager",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=20.10.0"
+  },
+  "workspaces": ["server", "client"],
+  "scripts": {
+    "dev": "concurrently -k -n server,client -c blue,green \"npm -w server run dev\" \"npm -w client run dev\"",
+    "build": "npm -w client run build && npm -w server run build",
+    "start": "node server/dist/server/src/index.js",
+    "typecheck": "npm -w server run typecheck && npm -w client run typecheck"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

@@ -1,0 +1,16 @@
+node_modules/
+dist/
+*.log
+*.tsbuildinfo
+.DS_Store
+.env
+.env.local
+.vite/
+
+# OS / editor
+.idea/
+.vscode/
+*.swp
+
+# Build caches
+.cache/
