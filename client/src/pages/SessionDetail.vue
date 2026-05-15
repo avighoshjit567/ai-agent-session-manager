@@ -99,19 +99,19 @@ const stats = computed(() => {
     <template v-else-if="session">
       <!-- Sticky header -->
       <header
-        class="sticky top-0 z-10 border-b border-zinc-800/80 bg-zinc-950/95 backdrop-blur supports-[backdrop-filter]:bg-zinc-950/80"
+        class="sticky top-0 z-10 border-b border-zinc-200 dark:border-zinc-800/80 bg-white/95 dark:bg-zinc-950/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 dark:supports-[backdrop-filter]:bg-zinc-950/80"
       >
         <div class="max-w-7xl mx-auto px-6 py-4">
           <div class="flex items-start gap-3">
             <RouterLink
               :to="{ name: 'sessions' }"
-              class="text-xs text-zinc-500 hover:text-zinc-300 mt-1"
+              class="text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 mt-1"
               >←</RouterLink
             >
             <ProviderAvatar :provider="session.provider" size="md" />
             <div class="flex-1 min-w-0">
               <h1
-                class="text-base font-semibold text-zinc-100 leading-snug line-clamp-2"
+                class="text-base font-semibold text-zinc-900 dark:text-zinc-100 leading-snug line-clamp-2"
               >
                 {{
                   session.title ||
@@ -138,7 +138,7 @@ const stats = computed(() => {
             <span class="text-zinc-700">·</span>
             <span class="inline-flex items-center gap-1 text-[11px] text-zinc-500">
               ID
-              <code class="font-mono text-zinc-400">{{ session.sessionId }}</code>
+              <code class="font-mono text-zinc-600 dark:text-zinc-400">{{ session.sessionId }}</code>
               <CopyButton :value="session.sessionId" label="session ID" small />
             </span>
           </div>
@@ -148,11 +148,11 @@ const stats = computed(() => {
       <div class="max-w-7xl mx-auto px-6 py-6 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
         <div>
           <div class="flex items-center gap-4 mb-4 text-xs">
-            <label class="inline-flex items-center gap-1.5 text-zinc-400 cursor-pointer">
+            <label class="inline-flex items-center gap-1.5 text-zinc-600 dark:text-zinc-400 cursor-pointer">
               <input type="checkbox" v-model="showToolResults" class="accent-zinc-500" />
               Show tool results
             </label>
-            <label class="inline-flex items-center gap-1.5 text-zinc-400 cursor-pointer">
+            <label class="inline-flex items-center gap-1.5 text-zinc-600 dark:text-zinc-400 cursor-pointer">
               <input type="checkbox" v-model="mask" class="accent-zinc-500" />
               Mask secrets
             </label>
@@ -161,7 +161,7 @@ const stats = computed(() => {
                 {{ exportPath }}
               </span>
               <button
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-zinc-700 hover:border-zinc-600 hover:bg-zinc-900 transition-colors disabled:opacity-50"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors disabled:opacity-50"
                 :disabled="exporting"
                 @click="doExport"
               >
@@ -187,31 +187,31 @@ const stats = computed(() => {
 
           <TokenBreakdown :session="session" />
 
-          <div class="rounded-xl border border-zinc-800 bg-zinc-900/30 p-3">
+          <div class="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/30 p-3">
             <div class="grid grid-cols-2 gap-2">
-              <div v-for="s in stats" :key="s.label" class="text-center py-2 rounded-md bg-zinc-900/40">
-                <div class="text-base font-semibold text-zinc-100 tabular-nums">{{ s.value }}</div>
+              <div v-for="s in stats" :key="s.label" class="text-center py-2 rounded-md bg-zinc-50 dark:bg-zinc-900/40">
+                <div class="text-base font-semibold text-zinc-900 dark:text-zinc-100 tabular-nums">{{ s.value }}</div>
                 <div class="text-[10px] uppercase tracking-wider text-zinc-500 mt-0.5">{{ s.label }}</div>
               </div>
             </div>
-            <div class="mt-3 pt-3 border-t border-zinc-800 space-y-1 text-[11px]">
-              <div class="flex justify-between"><span class="text-zinc-500">Started</span><span class="text-zinc-300">{{ fmtDate(session.createdAt) }}</span></div>
-              <div class="flex justify-between"><span class="text-zinc-500">Updated</span><span class="text-zinc-300">{{ fmtDate(session.updatedAt) }}</span></div>
+            <div class="mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-800 space-y-1 text-[11px]">
+              <div class="flex justify-between"><span class="text-zinc-500">Started</span><span class="text-zinc-700 dark:text-zinc-300">{{ fmtDate(session.createdAt) }}</span></div>
+              <div class="flex justify-between"><span class="text-zinc-500">Updated</span><span class="text-zinc-700 dark:text-zinc-300">{{ fmtDate(session.updatedAt) }}</span></div>
               <div class="text-zinc-600 truncate font-mono pt-1" :title="session.sourcePath">{{ session.sourcePath }}</div>
             </div>
           </div>
 
-          <div v-if="note" class="rounded-xl border border-zinc-800 bg-zinc-900/30 p-3 space-y-2">
+          <div v-if="note" class="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/30 p-3 space-y-2">
             <div class="flex items-center justify-between">
-              <h3 class="text-xs font-semibold text-zinc-200 uppercase tracking-wider">Private notes</h3>
+              <h3 class="text-xs font-semibold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">Private notes</h3>
               <button
-                class="text-[11px] px-2 py-0.5 rounded border border-zinc-700 hover:bg-zinc-800"
+                class="text-[11px] px-2 py-0.5 rounded border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-800"
                 @click="saveNote"
               >Save</button>
             </div>
             <select
               v-model="note.status"
-              class="w-full px-2 py-1 rounded border border-zinc-800 bg-zinc-900 text-zinc-100 text-xs"
+              class="w-full px-2 py-1 rounded border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 text-xs"
             >
               <option value="none">No status</option>
               <option value="important">⭐ Important</option>
@@ -222,25 +222,25 @@ const stats = computed(() => {
             <input
               v-model="tagsString"
               placeholder="tags, comma, separated"
-              class="w-full px-2 py-1 rounded border border-zinc-800 bg-zinc-900 text-zinc-100 text-xs"
+              class="w-full px-2 py-1 rounded border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 text-xs"
             />
             <textarea
               v-model="note.summary"
               placeholder="Summary"
               rows="3"
-              class="w-full px-2 py-1 rounded border border-zinc-800 bg-zinc-900 text-zinc-100 text-xs"
+              class="w-full px-2 py-1 rounded border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 text-xs"
             />
             <textarea
               v-model="note.followUps"
               placeholder="Follow-ups"
               rows="2"
-              class="w-full px-2 py-1 rounded border border-zinc-800 bg-zinc-900 text-zinc-100 text-xs"
+              class="w-full px-2 py-1 rounded border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 text-xs"
             />
             <textarea
               v-model="note.lessons"
               placeholder="Lessons learned"
               rows="2"
-              class="w-full px-2 py-1 rounded border border-zinc-800 bg-zinc-900 text-zinc-100 text-xs"
+              class="w-full px-2 py-1 rounded border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 text-xs"
             />
           </div>
         </aside>

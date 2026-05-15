@@ -12,7 +12,7 @@ const { state } = useToast();
         :key="t.id"
         class="pointer-events-auto rounded-lg border px-3 py-2 text-sm shadow-lg backdrop-blur-sm min-w-[200px]"
         :class="{
-          'border-zinc-700 bg-zinc-900/95 text-zinc-100': t.kind === 'info',
+          'border-zinc-300 dark:border-zinc-700 bg-white/95 dark:bg-zinc-900/95 text-zinc-900 dark:text-zinc-100': t.kind === 'info',
           'border-emerald-500/40 bg-emerald-500/10 text-emerald-200': t.kind === 'success',
           'border-rose-500/40 bg-rose-500/10 text-rose-200': t.kind === 'error',
         }"
@@ -20,7 +20,7 @@ const { state } = useToast();
         <div class="flex items-center gap-2">
           <span v-if="t.kind === 'success'" class="text-emerald-400">✓</span>
           <span v-else-if="t.kind === 'error'" class="text-rose-400">✕</span>
-          <span v-else class="text-zinc-400">›</span>
+          <span v-else class="text-zinc-600 dark:text-zinc-400">›</span>
           <span>{{ t.message }}</span>
         </div>
       </div>

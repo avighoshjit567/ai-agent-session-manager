@@ -27,7 +27,7 @@ const barCls = computed(() => {
     case 'warning': return 'bg-amber-500';
     case 'moderate': return 'bg-sky-500';
     case 'low': return 'bg-emerald-500';
-    default: return 'bg-zinc-700';
+    default: return 'bg-zinc-300 dark:bg-zinc-700';
   }
 });
 
@@ -69,7 +69,7 @@ function fmt(n: number | null): string {
       tier === 'warning' ? 'bg-amber-500/15 text-amber-300' :
       tier === 'moderate' ? 'bg-sky-500/15 text-sky-300' :
       tier === 'low' ? 'bg-emerald-500/15 text-emerald-300' :
-      'bg-zinc-800 text-zinc-500'
+      'bg-zinc-200 dark:bg-zinc-800 text-zinc-500'
     ]"
     :title="used && window ? `${fmt(used)} / ${fmt(window)} context tokens` : 'No context info'"
   >
@@ -78,19 +78,19 @@ function fmt(n: number | null): string {
   </span>
 
   <!-- Full bar for detail page -->
-  <div v-else class="rounded-lg border border-zinc-800 bg-zinc-900/30 p-3">
+  <div v-else class="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/30 p-3">
     <div class="flex items-baseline justify-between mb-2">
       <div class="flex items-baseline gap-1.5">
         <span class="text-[11px] uppercase tracking-wider text-zinc-500">Context window</span>
         <span v-if="pct !== null" class="text-base font-semibold tabular-nums" :class="textCls">{{ pct.toFixed(1) }}%</span>
         <span v-else class="text-sm text-zinc-500">unknown</span>
       </div>
-      <div class="text-[11px] text-zinc-400 tabular-nums">
-        <span class="text-zinc-200">{{ fmt(used) }}</span> / {{ fmt(window) }}
+      <div class="text-[11px] text-zinc-600 dark:text-zinc-400 tabular-nums">
+        <span class="text-zinc-800 dark:text-zinc-200">{{ fmt(used) }}</span> / {{ fmt(window) }}
       </div>
     </div>
 
-    <div class="h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+    <div class="h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden">
       <div
         v-if="pct !== null"
         class="h-full rounded-full transition-all"

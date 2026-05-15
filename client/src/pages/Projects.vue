@@ -33,19 +33,19 @@ function fmtDate(iso: string | null): string {
 <template>
   <div class="p-6 max-w-6xl mx-auto">
     <header class="mb-4">
-      <h1 class="text-xl font-semibold text-zinc-100">Projects</h1>
+      <h1 class="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Projects</h1>
       <p class="text-sm text-zinc-500">Auto-detected from Claude `cwd` and Codex `threads.cwd`.</p>
     </header>
 
     <input
       v-model="filter"
       placeholder="Filter projects…"
-      class="w-full mb-4 px-3 py-2 rounded border border-zinc-800 bg-zinc-900 text-zinc-100 text-sm placeholder:text-zinc-500"
+      class="w-full mb-4 px-3 py-2 rounded border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 text-sm placeholder:text-zinc-500"
     />
 
-    <div class="rounded-lg border border-zinc-800 overflow-hidden">
+    <div class="rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden">
       <table class="w-full text-sm">
-        <thead class="bg-zinc-900 text-xs uppercase tracking-wide text-zinc-400">
+        <thead class="bg-zinc-100 dark:bg-zinc-900 text-xs uppercase tracking-wide text-zinc-600 dark:text-zinc-400">
           <tr>
             <th class="px-3 py-2 text-left font-medium">Project</th>
             <th class="px-3 py-2 text-right font-medium">Sessions</th>
@@ -61,19 +61,19 @@ function fmtDate(iso: string | null): string {
           <tr
             v-for="p in filtered"
             :key="p.projectPath"
-            class="border-t border-zinc-800 hover:bg-zinc-900/60 cursor-pointer"
+            class="border-t border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900/60 cursor-pointer"
           >
             <td class="px-3 py-2">
               <RouterLink
                 :to="{ name: 'sessions', query: { projectPath: p.projectPath } }"
-                class="text-zinc-100 hover:underline"
+                class="text-zinc-900 dark:text-zinc-100 hover:underline"
               >
                 {{ p.projectPath }}
               </RouterLink>
             </td>
-            <td class="px-3 py-2 text-right text-zinc-300">{{ p.sessionCount }}</td>
-            <td class="px-3 py-2 text-zinc-400">{{ p.providers.join(', ') }}</td>
-            <td class="px-3 py-2 text-zinc-400">{{ fmtDate(p.latestUpdatedAt) }}</td>
+            <td class="px-3 py-2 text-right text-zinc-700 dark:text-zinc-300">{{ p.sessionCount }}</td>
+            <td class="px-3 py-2 text-zinc-600 dark:text-zinc-400">{{ p.providers.join(', ') }}</td>
+            <td class="px-3 py-2 text-zinc-600 dark:text-zinc-400">{{ fmtDate(p.latestUpdatedAt) }}</td>
           </tr>
         </tbody>
       </table>

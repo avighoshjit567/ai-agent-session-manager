@@ -25,16 +25,16 @@ onMounted(refresh);
 
 <template>
   <div class="p-6 max-w-3xl mx-auto">
-    <h1 class="text-xl font-semibold text-zinc-100 mb-4">Settings</h1>
+    <h1 class="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Settings</h1>
 
-    <section class="rounded-lg border border-zinc-800 bg-zinc-900/40 p-4 mb-6">
-      <h2 class="font-medium text-zinc-200 mb-2">Index</h2>
-      <p class="text-sm text-zinc-400 mb-3">
+    <section class="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 p-4 mb-6">
+      <h2 class="font-medium text-zinc-800 dark:text-zinc-200 mb-2">Index</h2>
+      <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-3">
         The index is a local SQLite cache derived from <code>~/.claude</code> and <code>~/.codex</code>.
         Your original files are never modified.
       </p>
       <button
-        class="px-3 py-1.5 rounded border border-zinc-700 hover:bg-zinc-800 text-sm disabled:opacity-50"
+        class="px-3 py-1.5 rounded border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-sm disabled:opacity-50"
         :disabled="loading"
         @click="rebuild"
       >
@@ -55,9 +55,9 @@ onMounted(refresh);
       </div>
     </section>
 
-    <section class="rounded-lg border border-zinc-800 bg-zinc-900/40 p-4 mb-6">
-      <h2 class="font-medium text-zinc-200 mb-2">Privacy</h2>
-      <ul class="text-sm text-zinc-400 space-y-1.5 list-disc list-inside">
+    <section class="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 p-4 mb-6">
+      <h2 class="font-medium text-zinc-800 dark:text-zinc-200 mb-2">Privacy</h2>
+      <ul class="text-sm text-zinc-600 dark:text-zinc-400 space-y-1.5 list-disc list-inside">
         <li>Auth and config files (<code>auth.json</code>, <code>config.toml</code>, <code>settings.json</code>) are never read.</li>
         <li>Full transcript indexing is off — only titles, prompts, paths, and branches are indexed.</li>
         <li>Tool outputs are excluded from previews by default.</li>
@@ -65,9 +65,9 @@ onMounted(refresh);
       </ul>
     </section>
 
-    <section class="rounded-lg border border-zinc-800 bg-zinc-900/40 p-4">
-      <h2 class="font-medium text-zinc-200 mb-2">Storage</h2>
-      <ul class="text-sm text-zinc-400 space-y-1 font-mono">
+    <section class="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 p-4">
+      <h2 class="font-medium text-zinc-800 dark:text-zinc-200 mb-2">Storage</h2>
+      <ul class="text-sm text-zinc-600 dark:text-zinc-400 space-y-1 font-mono">
         <li>Source: ~/.claude, ~/.codex</li>
         <li>Index: ~/Library/Application Support/claude-codex-session-manager/index.sqlite</li>
         <li>Notes: ~/Library/Application Support/claude-codex-session-manager/notes/</li>

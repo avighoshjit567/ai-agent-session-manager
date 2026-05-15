@@ -133,21 +133,21 @@ function prev() {
   <div class="p-6 max-w-7xl mx-auto">
     <header class="mb-5 flex items-baseline justify-between">
       <div>
-        <h1 class="text-xl font-semibold text-zinc-100">Sessions</h1>
+        <h1 class="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Sessions</h1>
         <p class="text-sm text-zinc-500 mt-0.5">{{ total }} total · {{ showing }} shown</p>
       </div>
       <button
         v-if="hasActiveFilters"
         @click="reset"
-        class="text-xs px-2.5 py-1 rounded-md border border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900"
+        class="text-xs px-2.5 py-1 rounded-md border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-900"
       >Clear filters</button>
     </header>
 
-    <div class="rounded-xl border border-zinc-800 bg-zinc-900/30 p-3 mb-4">
+    <div class="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/30 p-3 mb-4">
       <div class="grid grid-cols-1 md:grid-cols-6 gap-2 mb-3">
         <select
           v-model="filter.provider"
-          class="px-2.5 py-1.5 rounded-md border border-zinc-800 bg-zinc-950 text-zinc-100 text-sm focus:border-zinc-600 outline-none"
+          class="px-2.5 py-1.5 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 text-sm focus:border-zinc-400 dark:focus:border-zinc-600 outline-none"
           @change="apply"
         >
           <option value="all">All providers</option>
@@ -157,24 +157,24 @@ function prev() {
         <input
           v-model="filter.projectPath"
           placeholder="Project path"
-          class="px-2.5 py-1.5 rounded-md border border-zinc-800 bg-zinc-950 text-zinc-100 text-sm md:col-span-2 focus:border-zinc-600 outline-none"
+          class="px-2.5 py-1.5 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 text-sm md:col-span-2 focus:border-zinc-400 dark:focus:border-zinc-600 outline-none"
           @change="apply"
         />
         <input
           v-model="filter.branch"
           placeholder="Branch"
-          class="px-2.5 py-1.5 rounded-md border border-zinc-800 bg-zinc-950 text-zinc-100 text-sm focus:border-zinc-600 outline-none"
+          class="px-2.5 py-1.5 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 text-sm focus:border-zinc-400 dark:focus:border-zinc-600 outline-none"
           @change="apply"
         />
         <input
           v-model="filter.q"
           placeholder="Search titles, prompts…"
-          class="px-2.5 py-1.5 rounded-md border border-zinc-800 bg-zinc-950 text-zinc-100 text-sm md:col-span-2 focus:border-zinc-600 outline-none"
+          class="px-2.5 py-1.5 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 text-sm md:col-span-2 focus:border-zinc-400 dark:focus:border-zinc-600 outline-none"
           @keyup.enter="apply"
         />
       </div>
 
-      <div class="flex items-center gap-3 text-xs text-zinc-400">
+      <div class="flex items-center gap-3 text-xs text-zinc-600 dark:text-zinc-400">
         <label class="inline-flex items-center gap-1.5 cursor-pointer">
           <input type="checkbox" v-model="filter.hasTools" @change="apply" class="accent-violet-500" />
           Has tool calls
@@ -199,13 +199,13 @@ function prev() {
 
     <div class="flex items-center justify-between mt-3 text-xs">
       <button
-        class="px-3 py-1.5 rounded-md border border-zinc-800 text-zinc-300 hover:bg-zinc-900 disabled:opacity-40"
+        class="px-3 py-1.5 rounded-md border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-900 disabled:opacity-40"
         :disabled="offset === 0"
         @click="prev"
       >← Prev</button>
       <span class="text-zinc-500">{{ showing }}</span>
       <button
-        class="px-3 py-1.5 rounded-md border border-zinc-800 text-zinc-300 hover:bg-zinc-900 disabled:opacity-40"
+        class="px-3 py-1.5 rounded-md border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-900 disabled:opacity-40"
         :disabled="offset + items.length >= total"
         @click="next"
       >Next →</button>

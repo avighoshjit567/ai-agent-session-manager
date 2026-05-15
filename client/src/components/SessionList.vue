@@ -47,10 +47,10 @@ function resumeCmd(s: Session): string {
 
 <template>
   <div
-    class="overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-950/60 shadow-sm"
+    class="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-white/60 dark:bg-zinc-950/60 shadow-sm"
   >
     <table class="w-full text-sm">
-      <thead class="bg-zinc-900/60 border-b border-zinc-800/80">
+      <thead class="bg-zinc-100 dark:bg-zinc-900/60 border-b border-zinc-200 dark:border-zinc-800/80">
         <tr class="text-[10.5px] uppercase tracking-wider text-zinc-500">
           <th class="px-3 py-2.5 text-left font-medium w-8"></th>
           <th class="px-3 py-2.5 text-left font-medium">Title / First prompt</th>
@@ -78,19 +78,19 @@ function resumeCmd(s: Session): string {
         <tr
           v-for="s in rows"
           :key="`${s.provider}:${s.sessionId}`"
-          class="group border-t border-zinc-900/80 hover:bg-zinc-900/40 cursor-pointer transition-colors"
+          class="group border-t border-zinc-100 dark:border-zinc-900/80 hover:bg-zinc-50 dark:hover:bg-zinc-900/40 cursor-pointer transition-colors"
           @click="open(s)"
         >
           <td class="px-3 py-2.5 align-top">
             <ProviderAvatar :provider="s.provider" size="sm" />
           </td>
           <td class="px-3 py-2.5 max-w-[420px]">
-            <div class="text-zinc-100 leading-snug line-clamp-2">{{ preview(s) }}</div>
+            <div class="text-zinc-900 dark:text-zinc-100 leading-snug line-clamp-2">{{ preview(s) }}</div>
             <div class="mt-1 flex items-center gap-1.5">
               <SessionIdChip :session-id="s.sessionId" />
               <span
                 v-if="s.archived"
-                class="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-400"
+                class="rounded bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-600 dark:text-zinc-400"
                 >archived</span
               >
               <span
@@ -105,20 +105,20 @@ function resumeCmd(s: Session): string {
               >
             </div>
           </td>
-          <td class="px-3 py-2.5 align-top text-zinc-300 max-w-[180px]">
+          <td class="px-3 py-2.5 align-top text-zinc-700 dark:text-zinc-300 max-w-[180px]">
             <div class="truncate" :title="s.projectPath ?? ''">{{ projectName(s.projectPath) }}</div>
             <div v-if="s.model" class="text-[10.5px] text-zinc-500 truncate">{{ s.model }}</div>
           </td>
-          <td class="px-3 py-2.5 align-top text-zinc-400 max-w-[180px] truncate font-mono text-xs">
+          <td class="px-3 py-2.5 align-top text-zinc-600 dark:text-zinc-400 max-w-[180px] truncate font-mono text-xs">
             {{ s.gitBranch ?? '—' }}
           </td>
-          <td class="px-3 py-2.5 align-top text-zinc-400 whitespace-nowrap text-xs">
+          <td class="px-3 py-2.5 align-top text-zinc-600 dark:text-zinc-400 whitespace-nowrap text-xs">
             {{ fmtDate(s.updatedAt) }}
           </td>
           <td class="px-3 py-2.5 align-top text-right">
             <ContextBar :used="s.lastContextTokens" :window="s.contextWindow" compact />
           </td>
-          <td class="px-3 py-2.5 align-top text-right text-zinc-300 tabular-nums">
+          <td class="px-3 py-2.5 align-top text-right text-zinc-700 dark:text-zinc-300 tabular-nums">
             {{ s.messageCount }}
           </td>
           <td class="px-3 py-2.5 align-top text-right tabular-nums">

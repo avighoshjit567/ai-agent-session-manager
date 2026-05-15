@@ -18,7 +18,7 @@ const command = computed(() =>
 
 <template>
   <div
-    class="group inline-flex items-center gap-2 rounded-md border bg-zinc-900/70 font-mono text-xs"
+    class="group inline-flex items-center gap-2 rounded-md border bg-white dark:bg-zinc-900/70 font-mono text-xs"
     :class="[
       compact ? 'px-2 py-1' : 'px-2.5 py-1.5',
       provider === 'claude'
@@ -27,7 +27,7 @@ const command = computed(() =>
     ]"
   >
     <span class="text-zinc-500 select-none">$</span>
-    <span class="text-zinc-100 truncate max-w-[28rem]" :title="command">{{ command }}</span>
+    <span class="text-zinc-900 dark:text-zinc-100 truncate max-w-[28rem]" :title="command">{{ command }}</span>
     <CopyButton :value="command" :label="`resume command`" small />
   </div>
 </template>

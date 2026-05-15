@@ -28,14 +28,14 @@ async function go() {
 <template>
   <div class="p-6 max-w-6xl mx-auto">
     <header class="mb-4">
-      <h1 class="text-xl font-semibold text-zinc-100">Search</h1>
+      <h1 class="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Search</h1>
       <p class="text-sm text-zinc-500">Searches titles, project paths, branches, and first prompts.</p>
     </header>
 
     <div class="flex gap-2 mb-6">
       <select
         v-model="provider"
-        class="px-2 py-2 rounded border border-zinc-800 bg-zinc-900 text-zinc-100 text-sm"
+        class="px-2 py-2 rounded border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 text-sm"
       >
         <option value="all">All</option>
         <option value="claude">Claude</option>
@@ -44,10 +44,10 @@ async function go() {
       <input
         v-model="q"
         placeholder="e.g. cache, ssl, redirect, refactor billing"
-        class="flex-1 px-3 py-2 rounded border border-zinc-800 bg-zinc-900 text-zinc-100 text-sm"
+        class="flex-1 px-3 py-2 rounded border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 text-sm"
         @keyup.enter="go"
       />
-      <button class="px-4 py-2 rounded border border-zinc-700 hover:bg-zinc-800 text-sm" @click="go">
+      <button class="px-4 py-2 rounded border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-sm" @click="go">
         Search
       </button>
     </div>

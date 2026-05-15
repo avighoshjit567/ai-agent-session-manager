@@ -48,10 +48,10 @@ const grossTotal = computed(() => {
 </script>
 
 <template>
-  <div v-if="rows.length" class="rounded-lg border border-zinc-800 bg-zinc-900/30 p-3">
+  <div v-if="rows.length" class="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/30 p-3">
     <div class="flex items-baseline justify-between mb-2">
       <span class="text-[11px] uppercase tracking-wider text-zinc-500">Tokens</span>
-      <span v-if="grossTotal" class="text-base font-semibold text-zinc-100 tabular-nums">{{ fmt(grossTotal) }}</span>
+      <span v-if="grossTotal" class="text-base font-semibold text-zinc-900 dark:text-zinc-100 tabular-nums">{{ fmt(grossTotal) }}</span>
     </div>
     <div class="space-y-1">
       <div
@@ -61,7 +61,7 @@ const grossTotal = computed(() => {
         :title="r.hint"
       >
         <span class="text-zinc-500">{{ r.label }}</span>
-        <span class="text-zinc-200 tabular-nums">{{ r.value }}</span>
+        <span class="text-zinc-800 dark:text-zinc-200 tabular-nums">{{ r.value }}</span>
       </div>
     </div>
   </div>

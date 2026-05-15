@@ -26,7 +26,7 @@ async function handle(e: MouseEvent) {
     type="button"
     @click="handle"
     :title="`Copy ${label ?? 'value'}`"
-    class="inline-flex items-center justify-center rounded transition-colors text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
+    class="inline-flex items-center justify-center rounded transition-colors text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-800"
     :class="small ? 'h-5 w-5' : 'h-6 w-6'"
   >
     <svg

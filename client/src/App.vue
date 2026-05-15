@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue';
 import { RouterLink, RouterView } from 'vue-router';
 import { api } from './api';
 import ToastHost from './components/ToastHost.vue';
+import ThemeToggle from './components/ThemeToggle.vue';
 import { useToast } from './composables/useToast';
 
 const toast = useToast();
@@ -67,15 +68,15 @@ const nav = [
 </script>
 
 <template>
-  <div class="flex h-full bg-zinc-950">
-    <aside class="w-60 shrink-0 border-r border-zinc-800/80 bg-zinc-950 flex flex-col">
-      <div class="px-4 py-4 border-b border-zinc-800/80">
+  <div class="flex h-full bg-white dark:bg-zinc-950">
+    <aside class="w-60 shrink-0 border-r border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 flex flex-col">
+      <div class="px-4 py-4 border-b border-zinc-200 dark:border-zinc-800/80">
         <div class="flex items-center gap-2">
           <div class="h-7 w-7 rounded-md bg-gradient-to-br from-amber-500/80 to-emerald-500/80 flex items-center justify-center text-zinc-950 font-bold text-[11px]">
             S
           </div>
           <div>
-            <div class="text-sm font-semibold text-zinc-100 leading-tight">Session Manager</div>
+            <div class="text-sm font-semibold text-zinc-900 dark:text-zinc-100 leading-tight">Session Manager</div>
             <div class="text-[10px] text-zinc-500 leading-tight">Claude · Codex</div>
           </div>
         </div>
@@ -85,9 +86,9 @@ const nav = [
           v-for="item in nav"
           :key="item.to"
           :to="item.to"
-          class="group flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm text-zinc-400 hover:bg-zinc-900/60 hover:text-zinc-100 transition-colors"
-          active-class="bg-zinc-900 text-zinc-100"
-          :exact-active-class="item.to === '/' ? 'bg-zinc-900 text-zinc-100' : ''"
+          class="group flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900/60 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+          active-class="bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
+          :exact-active-class="item.to === '/' ? 'bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100' : ''"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -104,7 +105,8 @@ const nav = [
           {{ item.label }}
         </RouterLink>
       </nav>
-      <div class="border-t border-zinc-800/80 p-3 space-y-2">
+      <div class="border-t border-zinc-200 dark:border-zinc-800/80 p-3 space-y-2">
+        <ThemeToggle />
         <div class="flex items-center gap-1.5 text-[11px] text-zinc-500">
           <span
             class="inline-block h-1.5 w-1.5 rounded-full"
@@ -120,7 +122,7 @@ const nav = [
           <span v-else>—</span>
         </div>
         <button
-          class="w-full text-xs px-2 py-1.5 rounded-md border border-zinc-700 hover:bg-zinc-900 hover:border-zinc-600 disabled:opacity-50 transition-colors"
+          class="w-full text-xs px-2 py-1.5 rounded-md border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:border-zinc-400 dark:hover:border-zinc-600 disabled:opacity-50 transition-colors"
           :disabled="indexing"
           @click="rebuild"
         >

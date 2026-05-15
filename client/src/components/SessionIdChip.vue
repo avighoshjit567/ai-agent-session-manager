@@ -8,7 +8,7 @@ const short = computed(() => props.sessionId.slice(0, 8));
 
 <template>
   <span
-    class="inline-flex items-center gap-1 rounded bg-zinc-800/80 px-1.5 py-0.5 text-[10.5px] font-mono text-zinc-300"
+    class="inline-flex items-center gap-1 rounded bg-zinc-200 dark:bg-zinc-800/80 px-1.5 py-0.5 text-[10.5px] font-mono text-zinc-700 dark:text-zinc-300"
   >
     <span :title="sessionId">{{ truncate === false ? sessionId : short }}</span>
     <CopyButton :value="sessionId" label="session ID" small />

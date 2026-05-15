@@ -31,6 +31,7 @@ The originals in `~/.claude/` and `~/.codex/` are never touched.
 - **Private notes** with status (important / follow-up / archived / lesson), tags, summary, follow-ups, lessons learned — stored in your app data folder, never inside `~/.claude` or `~/.codex`.
 - **Watch mode** — `chokidar` watches `~/.claude/projects` and `~/.codex/sessions`; index refreshes automatically when sessions update.
 - **Secret masking** — best-effort regex masking of API keys, JWTs, private key blocks, and `.env`-style assignments in previews and exports.
+- **Themes** — light, dark, and system (follows `prefers-color-scheme`). Toggle in the sidebar; choice persists in `localStorage`. No flash of unstyled content on reload.
 
 ## Requirements
 
