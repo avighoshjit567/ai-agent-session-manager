@@ -2,11 +2,11 @@
 import { ref } from 'vue';
 import { api } from '../api';
 import SessionList from '../components/SessionList.vue';
-import type { Session } from '@shared/types';
+import type { SessionListItem } from '@shared/types';
 
 const q = ref('');
 const provider = ref<'all' | 'claude' | 'codex'>('all');
-const items = ref<Session[]>([]);
+const items = ref<SessionListItem[]>([]);
 const total = ref(0);
 const loading = ref(false);
 const ran = ref(false);
@@ -29,7 +29,7 @@ async function go() {
   <div class="p-6 max-w-6xl mx-auto">
     <header class="mb-4">
       <h1 class="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Search</h1>
-      <p class="text-sm text-zinc-500">Searches titles, project paths, branches, and first prompts.</p>
+      <p class="text-sm text-zinc-500">Searches full conversation content — titles, prompts, and everything said in the session.</p>
     </header>
 
     <div class="flex gap-2 mb-6">

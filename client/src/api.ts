@@ -1,5 +1,6 @@
 import type {
   Session,
+  SessionListItem,
   TimelineItem,
   ProjectSummary,
   Note,
@@ -40,7 +41,7 @@ export const api = {
       if (v === undefined || v === '' || v === null) continue;
       params.set(k, String(v));
     }
-    return http<{ items: Session[]; total: number }>(
+    return http<{ items: SessionListItem[]; total: number }>(
       `/api/sessions${params.toString() ? '?' + params.toString() : ''}`,
     );
   },

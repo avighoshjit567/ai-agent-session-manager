@@ -3,12 +3,12 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api } from '../api';
 import SessionList from '../components/SessionList.vue';
-import type { Session, SessionFilter } from '@shared/types';
+import type { SessionListItem, SessionFilter } from '@shared/types';
 
 const route = useRoute();
 const router = useRouter();
 
-const items = ref<Session[]>([]);
+const items = ref<SessionListItem[]>([]);
 const total = ref(0);
 const loading = ref(false);
 const limit = 50;

@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
-import type { Session } from '@shared/types';
+import type { SessionListItem } from '@shared/types';
 import ProviderAvatar from './ProviderAvatar.vue';
+import { highlightSnippet } from '../lib/highlight';
 import SessionIdChip from './SessionIdChip.vue';
 import CopyButton from './CopyButton.vue';
 import ContextBar from './ContextBar.vue';
 
-const props = defineProps<{ sessions: Session[]; loading?: boolean }>();
+const props = defineProps<{ sessions: SessionListItem[]; loading?: boolean }>();
 const router = useRouter();
 
 const rows = computed(() => props.sessions);
 
-function open(s: Session) {
+function open(s: SessionListItem) {
   router.push({ name: 'session-detail', params: { provider: s.provider, sessionId: s.sessionId } });
 }
 
@@ -28,7 +29,7 @@ function fmtDate(iso: string | null): string {
   return d.toLocaleDateString();
 }
 
-function preview(s: Session): string {
+function preview(s: SessionListItem): string {
   const t = s.title?.trim() || s.firstUserMessage?.trim() || '(no title)';
   return t.length > 120 ? t.slice(0, 120) + '…' : t;
 }
@@ -38,7 +39,7 @@ function projectName(p: string | null): string {
   return p.split('/').filter(Boolean).pop() ?? p;
 }
 
-function resumeCmd(s: Session): string {
+function resumeCmd(s: SessionListItem): string {
   return s.provider === 'claude'
     ? `claude --resume ${s.sessionId}`
     : `codex resume ${s.sessionId}`;
@@ -86,6 +87,11 @@ function resumeCmd(s: Session): string {
           </td>
           <td class="px-3 py-2.5 max-w-[420px]">
             <div class="text-zinc-900 dark:text-zinc-100 leading-snug line-clamp-2">{{ preview(s) }}</div>
+            <div
+              v-if="highlightSnippet(s.matchSnippet)"
+              class="mt-1 text-[11.5px] text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-snug"
+              v-html="highlightSnippet(s.matchSnippet)"
+            ></div>
             <div class="mt-1 flex items-center gap-1.5">
               <SessionIdChip :session-id="s.sessionId" />
               <span
