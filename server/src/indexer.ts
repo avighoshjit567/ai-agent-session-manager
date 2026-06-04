@@ -55,8 +55,8 @@ export async function runFullIndex(opts: { force?: boolean } = {}): Promise<Inde
         continue;
       }
       try {
-        const { session } = await parseClaudeSession(f);
-        upsertSession(session, f.mtime);
+        const { session, body } = await parseClaudeSession(f);
+        upsertSession(session, f.mtime, body);
         stats.claudeSessions++;
       } catch (e: any) {
         stats.errors.push(`claude ${f.sessionId}: ${e?.message ?? e}`);
@@ -73,8 +73,8 @@ export async function runFullIndex(opts: { force?: boolean } = {}): Promise<Inde
         continue;
       }
       try {
-        const enriched = await enrichCodexSession(session);
-        upsertSession(enriched, mtime);
+        const { session: enriched, body } = await enrichCodexSession(session);
+        upsertSession(enriched, mtime, body);
         stats.codexSessions++;
       } catch (e: any) {
         stats.errors.push(`codex ${session.sessionId}: ${e?.message ?? e}`);
@@ -90,7 +90,7 @@ export async function runFullIndex(opts: { force?: boolean } = {}): Promise<Inde
   return stats;
 }
 
-function upsertSession(s: Session, mtime: number): void {
+function upsertSession(s: Session, mtime: number, body: string): void {
   const db = getDb();
   const indexedAt = new Date().toISOString();
   const sql = `
@@ -168,8 +168,8 @@ function upsertSession(s: Session, mtime: number): void {
     s.sessionId,
   );
   db.prepare(
-    `INSERT INTO sessions_fts (provider, session_id, title, project_path, git_branch, first_user_message)
-     VALUES (?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO sessions_fts (provider, session_id, title, project_path, git_branch, first_user_message, body)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     s.provider,
     s.sessionId,
@@ -177,6 +177,7 @@ function upsertSession(s: Session, mtime: number): void {
     s.projectPath ?? '',
     s.gitBranch ?? '',
     s.firstUserMessage ?? '',
+    body ?? '',
   );
 }
 

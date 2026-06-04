@@ -6,6 +6,7 @@ import cors from '@fastify/cors';
 import staticPlugin from '@fastify/static';
 import { registerApi } from './routes/api.js';
 import { runFullIndex } from './indexer.js';
+import { getDb, ftsReindexRequired, clearFtsReindexRequired } from './db.js';
 import { startWatchers } from './watcher.js';
 import { ensureAppDirs } from './paths.js';
 
@@ -66,14 +67,22 @@ async function main(): Promise<void> {
   await app.listen({ port: PORT, host: HOST });
   app.log.info(`Server listening on http://${HOST}:${PORT}`);
 
-  // Kick off initial index without blocking startup
-  runFullIndex().then((s) => {
-    app.log.info(
-      `Initial index complete: claude=${s.claudeSessions} codex=${s.codexSessions} errors=${s.errors.length}`,
-    );
-  }).catch((e) => {
-    app.log.error({ err: e }, 'Initial index failed');
-  });
+  // Ensure schema/migrations are applied before reading the reindex flag.
+  getDb();
+  const force = ftsReindexRequired();
+  if (force) {
+    app.log.info('FTS schema migrated — running a one-time full reindex to populate search bodies.');
+  }
+  runFullIndex({ force })
+    .then((s) => {
+      clearFtsReindexRequired();
+      app.log.info(
+        `Initial index complete: claude=${s.claudeSessions} codex=${s.codexSessions} errors=${s.errors.length}`,
+      );
+    })
+    .catch((e) => {
+      app.log.error({ err: e }, 'Initial index failed');
+    });
 
   startWatchers();
 }

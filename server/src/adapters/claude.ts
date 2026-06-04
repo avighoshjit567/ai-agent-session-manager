@@ -3,6 +3,7 @@ import path from 'node:path';
 import readline from 'node:readline';
 import { PATHS, decodeClaudeProjectPath } from '../paths.js';
 import type { Session, TimelineItem } from '../../../shared/types.js';
+import { deriveTitle, capBody, stripInjected } from '../extract.js';
 
 interface ClaudeEvent {
   type?: string;
@@ -68,6 +69,7 @@ export function listClaudeSessionFiles(): ClaudeSessionFile[] {
 interface ClaudeParseResult {
   session: Session;
   events: ClaudeEvent[];
+  body: string;
 }
 
 // Known Claude model context windows. Default is 200K; the "[1m]" variants
@@ -107,6 +109,7 @@ export async function parseClaudeSession(file: ClaudeSessionFile): Promise<Claud
   let messageCount = 0;
   let toolCallCount = 0;
   let hasSubagents = false;
+  const bodyParts: string[] = [];
 
   // Token accounting
   let inputTokens = 0;
@@ -132,8 +135,10 @@ export async function parseClaudeSession(file: ClaudeSessionFile): Promise<Claud
 
     if (ev.type === 'user' && !ev.isSidechain) {
       messageCount++;
+      const userText = extractText(ev.message);
+      if (userText) bodyParts.push(stripInjected(userText));
       if (!firstUserMessage) {
-        firstUserMessage = extractText(ev.message);
+        firstUserMessage = userText;
       }
     }
     if (ev.type === 'assistant') {
@@ -160,6 +165,7 @@ export async function parseClaudeSession(file: ClaudeSessionFile): Promise<Claud
       if (m && Array.isArray(m.content)) {
         for (const c of m.content) {
           if (c && c.type === 'tool_use') toolCallCount++;
+          if (c && c.type === 'text' && typeof c.text === 'string') bodyParts.push(c.text);
         }
       }
     }
@@ -184,15 +190,19 @@ export async function parseClaudeSession(file: ClaudeSessionFile): Promise<Claud
   const todosFile = path.join(PATHS.claudeTodos, `${file.sessionId}-agent-${file.sessionId}.json`);
   if (fs.existsSync(todosFile)) hasTodos = true;
 
+  const cleanedFirst = firstUserMessage ? cleanFirstMessage(firstUserMessage) : null;
+  const derivedTitle = deriveTitle(title, cleanedFirst);
+  const body = capBody(bodyParts.join('\n'));
+
   const session: Session = {
     provider: 'claude',
     sessionId: file.sessionId,
-    title,
+    title: derivedTitle,
     projectPath: file.projectPath,
     gitBranch,
     createdAt,
     updatedAt,
-    firstUserMessage: firstUserMessage ? cleanFirstMessage(firstUserMessage) : null,
+    firstUserMessage: cleanedFirst,
     sourcePath: file.filePath,
     archived: false,
     messageCount,
@@ -210,7 +220,7 @@ export async function parseClaudeSession(file: ClaudeSessionFile): Promise<Claud
     contextWindow: lastContextTokens !== null ? contextWindow : null,
   };
 
-  return { session, events };
+  return { session, events, body };
 }
 
 function num(v: unknown): number {

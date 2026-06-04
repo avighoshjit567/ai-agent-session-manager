@@ -3,6 +3,7 @@ import readline from 'node:readline';
 import Database from 'better-sqlite3';
 import { findCodexStateDb } from '../paths.js';
 import type { Session, TimelineItem } from '../../../shared/types.js';
+import { deriveTitle, capBody } from '../extract.js';
 
 interface CodexThreadRow {
   id: string;
@@ -65,7 +66,7 @@ export function listCodexThreads(): Array<{ session: Session; mtime: number }> {
       const session: Session = {
         provider: 'codex',
         sessionId: r.id,
-        title: r.title || null,
+        title: deriveTitle(r.title || null, r.first_user_message || null),
         projectPath: r.cwd || null,
         gitBranch: r.git_branch || null,
         createdAt: r.created_at ? new Date(r.created_at * 1000).toISOString() : null,
@@ -102,12 +103,15 @@ function truncate(s: string, n: number): string {
  * Walk the rollout JSONL to fill message/tool counts and pull context-window
  * info from the most recent task_started event.
  */
-export async function enrichCodexSession(session: Session): Promise<Session> {
-  if (!session.sourcePath || !fs.existsSync(session.sourcePath)) return session;
+export async function enrichCodexSession(session: Session): Promise<{ session: Session; body: string }> {
+  if (!session.sourcePath || !fs.existsSync(session.sourcePath)) {
+    return { session, body: '' };
+  }
   let messageCount = 0;
   let toolCallCount = 0;
   let contextWindow: number | null = null;
   let lastContextTokens: number | null = null;
+  const bodyParts: string[] = [];
 
   for await (const ev of readJsonl(session.sourcePath)) {
     if (!ev || typeof ev !== 'object') continue;
@@ -116,7 +120,11 @@ export async function enrichCodexSession(session: Session): Promise<Session> {
     const pType = p.type;
 
     if (evType === 'event_msg') {
-      if (pType === 'user_message' || pType === 'agent_message') messageCount++;
+      if (pType === 'user_message' || pType === 'agent_message') {
+        messageCount++;
+        const txt = typeof p.message === 'string' ? p.message : extractCodexText(p);
+        if (txt) bodyParts.push(txt);
+      }
       if (pType === 'task_started' && typeof p.model_context_window === 'number') {
         contextWindow = p.model_context_window;
       }
@@ -132,11 +140,14 @@ export async function enrichCodexSession(session: Session): Promise<Session> {
   }
 
   return {
-    ...session,
-    messageCount,
-    toolCallCount,
-    contextWindow,
-    lastContextTokens,
+    session: {
+      ...session,
+      messageCount,
+      toolCallCount,
+      contextWindow,
+      lastContextTokens,
+    },
+    body: capBody(bodyParts.join('\n')),
   };
 }
 
