@@ -3,6 +3,14 @@ import { ensureAppDirs, indexDbPath } from './paths.js';
 
 let db: Database.Database | null = null;
 
+let ftsReindex = false;
+export function ftsReindexRequired(): boolean {
+  return ftsReindex;
+}
+export function clearFtsReindexRequired(): void {
+  ftsReindex = false;
+}
+
 export function getDb(): Database.Database {
   if (db) return db;
   ensureAppDirs();
@@ -13,7 +21,7 @@ export function getDb(): Database.Database {
   return db;
 }
 
-function initSchema(d: Database.Database): void {
+export function initSchema(d: Database.Database): void {
   d.exec(`
     CREATE TABLE IF NOT EXISTS sessions (
       provider TEXT NOT NULL,
@@ -65,6 +73,16 @@ function initSchema(d: Database.Database): void {
     }
   }
 
+  // FTS5 cannot ALTER ADD COLUMN. If an older sessions_fts exists without `body`,
+  // drop it here and flag a one-time forced reindex to repopulate the column.
+  const existingFtsCols = (
+    d.prepare(`PRAGMA table_info(sessions_fts)`).all() as any[]
+  ).map((c) => c.name as string);
+  if (existingFtsCols.length > 0 && !existingFtsCols.includes('body')) {
+    d.exec(`DROP TABLE sessions_fts`);
+    ftsReindex = true;
+  }
+
   d.exec(`
 
     CREATE INDEX IF NOT EXISTS idx_sessions_updated ON sessions(updated_at DESC);
@@ -79,6 +97,7 @@ function initSchema(d: Database.Database): void {
       project_path,
       git_branch,
       first_user_message,
+      body,
       tokenize = 'porter unicode61'
     );
 
