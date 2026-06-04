@@ -1,5 +1,5 @@
 import { getDb } from './db.js';
-import type { Session, SessionFilter } from '../../shared/types.js';
+import type { Session, SessionFilter, SessionListItem } from '../../shared/types.js';
 
 const COLS = `
   s.provider AS provider, s.session_id AS sessionId, s.title AS title,
@@ -18,7 +18,7 @@ const COLS = `
   s.context_window AS contextWindow
 `;
 
-export function listSessions(filter: SessionFilter): { items: Session[]; total: number } {
+export function listSessions(filter: SessionFilter): { items: SessionListItem[]; total: number } {
   const db = getDb();
   const where: string[] = [];
   const args: Record<string, any> = {};
@@ -61,6 +61,14 @@ export function listSessions(filter: SessionFilter): { items: Session[]; total: 
     args.q = ftsQuery(filter.q);
   }
 
+  const hasQuery = !!(filter.q && filter.q.trim());
+  const snippetSelect = hasQuery
+    ? `, snippet(sessions_fts, 6, char(2), char(3), '…', 12) AS matchSnippet`
+    : '';
+  const orderSql = hasQuery
+    ? `ORDER BY bm25(sessions_fts)`
+    : `ORDER BY COALESCE(s.updated_at, s.created_at) DESC`;
+
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
   const limit = Math.min(filter.limit ?? 50, 200);
   const offset = filter.offset ?? 0;
@@ -73,14 +81,14 @@ export function listSessions(filter: SessionFilter): { items: Session[]; total: 
 
   const rows = db
     .prepare(
-      `SELECT ${COLS} FROM sessions s ${joinFts} ${whereSql}
-       ORDER BY COALESCE(s.updated_at, s.created_at) DESC
+      `SELECT ${COLS}${snippetSelect} FROM sessions s ${joinFts} ${whereSql}
+       ${orderSql}
        LIMIT @limit OFFSET @offset`,
     )
     .all({ ...args, limit, offset }) as any[];
 
   return {
-    items: rows.map(toSession),
+    items: rows.map((r) => ({ ...toSession(r), matchSnippet: r.matchSnippet ?? null })),
     total: totalRow.c,
   };
 }

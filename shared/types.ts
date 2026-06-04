@@ -31,6 +31,12 @@ export interface Session {
   contextWindow: number | null;
 }
 
+export interface SessionListItem extends Session {
+  // Highlighted FTS snippet of the body match, using  /  sentinels.
+  // Present only for content search results; null otherwise.
+  matchSnippet?: string | null;
+}
+
 export type TimelineItemType =
   | 'user'
   | 'assistant'
