@@ -17,7 +17,7 @@ const session = ref<Session | null>(null);
 const timeline = ref<TimelineItem[]>([]);
 const note = ref<Note | null>(null);
 const loading = ref(true);
-const showToolResults = ref(false);
+const includeToolOutputs = ref(false);
 const mask = ref(true);
 const exporting = ref(false);
 const exportPath = ref<string | null>(null);
@@ -55,7 +55,7 @@ async function doExport() {
   exporting.value = true;
   try {
     const r = await api.exportSession(props.provider as Provider, props.sessionId, {
-      includeToolOutputs: showToolResults.value,
+      includeToolOutputs: includeToolOutputs.value,
       maskSecrets: mask.value,
     });
     exportPath.value = r.path;
@@ -149,14 +149,14 @@ const stats = computed(() => {
         <div>
           <div class="flex items-center gap-4 mb-4 text-xs">
             <label class="inline-flex items-center gap-1.5 text-zinc-600 dark:text-zinc-400 cursor-pointer">
-              <input type="checkbox" v-model="showToolResults" class="accent-zinc-500" />
-              Show tool results
-            </label>
-            <label class="inline-flex items-center gap-1.5 text-zinc-600 dark:text-zinc-400 cursor-pointer">
               <input type="checkbox" v-model="mask" class="accent-zinc-500" />
               Mask secrets
             </label>
             <div class="ml-auto flex items-center gap-2">
+              <label class="inline-flex items-center gap-1.5 text-zinc-600 dark:text-zinc-400 cursor-pointer">
+                <input type="checkbox" v-model="includeToolOutputs" class="accent-zinc-500" />
+                Include tool outputs
+              </label>
               <span v-if="exportPath" class="text-[11px] text-emerald-400 font-mono truncate max-w-[240px]" :title="exportPath">
                 {{ exportPath }}
               </span>
@@ -175,7 +175,7 @@ const stats = computed(() => {
             </div>
           </div>
 
-          <SessionTimeline :items="timeline" :show-tool-results="showToolResults" />
+          <SessionTimeline :items="timeline" />
         </div>
 
         <aside class="space-y-4">
