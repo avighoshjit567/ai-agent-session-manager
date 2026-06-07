@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import type { TimelineItem } from '@shared/types';
 import CopyButton from './CopyButton.vue';
+import CollapsibleMessage from './CollapsibleMessage.vue';
 import { groupTimelineItems } from '../lib/timeline';
 
 const props = defineProps<{ items: TimelineItem[] }>();
@@ -36,13 +37,7 @@ function joined(items: TimelineItem[]): string {
             <CopyButton :value="joined(g.items)" label="message" small />
           </div>
         </div>
-        <div class="space-y-3">
-          <div
-            v-for="it in g.items"
-            :key="it.id"
-            class="whitespace-pre-wrap break-words text-zinc-900 dark:text-zinc-100 text-[13.5px] leading-relaxed"
-          >{{ it.content }}</div>
-        </div>
+        <CollapsibleMessage :items="g.items" variant="user" />
       </div>
 
       <!-- Assistant -->
@@ -60,13 +55,7 @@ function joined(items: TimelineItem[]): string {
             <CopyButton :value="joined(g.items)" label="message" small />
           </div>
         </div>
-        <div class="space-y-3">
-          <div
-            v-for="it in g.items"
-            :key="it.id"
-            class="whitespace-pre-wrap break-words text-zinc-900 dark:text-zinc-100 text-[13.5px] leading-relaxed"
-          >{{ it.content }}</div>
-        </div>
+        <CollapsibleMessage :items="g.items" variant="assistant" />
       </div>
 
       <!-- Metadata divider -->
