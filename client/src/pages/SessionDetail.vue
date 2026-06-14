@@ -21,6 +21,33 @@ const includeToolOutputs = ref(false);
 const mask = ref(true);
 const exporting = ref(false);
 const exportPath = ref<string | null>(null);
+const opening = ref(false);
+
+async function openTerminal() {
+  if (!session.value) return;
+  opening.value = true;
+  try {
+    await api.openInTerminal(session.value.provider as Provider, session.value.sessionId);
+    toast.success('Opening in terminal…');
+  } catch (e: any) {
+    toast.error(e?.message ?? 'Failed to open terminal');
+  } finally {
+    opening.value = false;
+  }
+}
+
+async function openEditor() {
+  if (!session.value) return;
+  opening.value = true;
+  try {
+    await api.openInEditor(session.value.provider as Provider, session.value.sessionId);
+    toast.success('Opening in editor…');
+  } catch (e: any) {
+    toast.error(e?.message ?? 'Failed to open editor');
+  } finally {
+    opening.value = false;
+  }
+}
 
 async function load() {
   loading.value = true;
@@ -135,6 +162,28 @@ const stats = computed(() => {
           <div class="mt-3 flex flex-wrap items-center gap-2">
             <span class="text-[11px] text-zinc-500 uppercase tracking-wider">Resume</span>
             <ResumeCommand :provider="session.provider" :session-id="session.sessionId" />
+            <button
+              class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-[11px] text-zinc-700 dark:text-zinc-300 transition-colors disabled:opacity-50"
+              :disabled="opening"
+              @click="openTerminal"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5">
+                <polyline points="4 17 10 11 4 5" />
+                <line x1="12" x2="20" y1="19" y2="19" />
+              </svg>
+              Terminal
+            </button>
+            <button
+              class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-[11px] text-zinc-700 dark:text-zinc-300 transition-colors disabled:opacity-50"
+              :disabled="opening"
+              @click="openEditor"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5">
+                <polyline points="16 18 22 12 16 6" />
+                <polyline points="8 6 2 12 8 18" />
+              </svg>
+              Editor
+            </button>
             <span class="text-zinc-700">·</span>
             <span class="inline-flex items-center gap-1 text-[11px] text-zinc-500">
               ID
