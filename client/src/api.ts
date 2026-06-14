@@ -6,6 +6,7 @@ import type {
   Note,
   Provider,
   SessionFilter,
+  AppSettings,
 } from '@shared/types';
 
 const BASE = '';
@@ -17,7 +18,14 @@ async function http<T>(url: string, init?: RequestInit): Promise<T> {
   });
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`${res.status} ${res.statusText}: ${text}`);
+    let message = `${res.status} ${res.statusText}`;
+    try {
+      const body = JSON.parse(text);
+      if (body && typeof body.error === 'string') message = body.error;
+    } catch {
+      if (text) message = text;
+    }
+    throw new Error(message);
   }
   return res.json() as Promise<T>;
 }
@@ -81,4 +89,15 @@ export const api = {
 
   indexStatus: () =>
     http<{ running: boolean; last: any }>('/api/index/status'),
+
+  getSettings: () => http<AppSettings>('/api/settings'),
+
+  saveSettings: (p: Partial<AppSettings>) =>
+    http<AppSettings>('/api/settings', { method: 'PUT', body: JSON.stringify(p) }),
+
+  openInEditor: (provider: Provider, sessionId: string) =>
+    http<{ ok: true }>(`/api/sessions/${provider}/${sessionId}/open-editor`, { method: 'POST' }),
+
+  openInTerminal: (provider: Provider, sessionId: string) =>
+    http<{ ok: true }>(`/api/sessions/${provider}/${sessionId}/open-terminal`, { method: 'POST' }),
 };
