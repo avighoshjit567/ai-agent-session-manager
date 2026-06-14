@@ -11,7 +11,10 @@ import { buildCodexTimeline } from '../adapters/codex.js';
 import { getNote, saveNote } from '../notes.js';
 import { exportSessionMarkdown } from '../export.js';
 import { maskSecrets } from '../privacy.js';
-import type { Provider, SessionFilter } from '../../../shared/types.js';
+import fs from 'node:fs';
+import { getSettings, saveSettings } from '../settings.js';
+import { openInEditor, openInTerminal, buildResumeCommand } from '../launch.js';
+import type { Provider, SessionFilter, AppSettings } from '../../../shared/types.js';
 
 export async function registerApi(app: FastifyInstance): Promise<void> {
   app.get('/api/health', async () => ({ ok: true }));
@@ -141,4 +144,60 @@ export async function registerApi(app: FastifyInstance): Promise<void> {
     running: isIndexing(),
     last: getIndexStats(),
   }));
+
+  app.get('/api/settings', async () => getSettings());
+
+  app.put<{ Body: Partial<AppSettings> }>('/api/settings', async (req) =>
+    saveSettings(req.body ?? {}),
+  );
+
+  app.post<{ Params: { provider: Provider; sessionId: string } }>(
+    '/api/sessions/:provider/:sessionId/open-editor',
+    async (req, reply) => {
+      const { provider, sessionId } = req.params;
+      const s = getSession(provider, sessionId);
+      if (!s) {
+        reply.code(404);
+        return { error: 'Session not found' };
+      }
+      if (!s.projectPath || !fs.existsSync(s.projectPath)) {
+        reply.code(400);
+        return { error: 'No project folder recorded for this session.' };
+      }
+      const editorCommand = getSettings().editorCommand;
+      try {
+        await openInEditor(s.projectPath, editorCommand);
+        return { ok: true };
+      } catch {
+        reply.code(500);
+        return {
+          error: `Couldn't launch '${editorCommand}' — make sure it's installed and on your PATH.`,
+        };
+      }
+    },
+  );
+
+  app.post<{ Params: { provider: Provider; sessionId: string } }>(
+    '/api/sessions/:provider/:sessionId/open-terminal',
+    async (req, reply) => {
+      const { provider, sessionId } = req.params;
+      const s = getSession(provider, sessionId);
+      if (!s) {
+        reply.code(404);
+        return { error: 'Session not found' };
+      }
+      if (!s.projectPath || !fs.existsSync(s.projectPath)) {
+        reply.code(400);
+        return { error: 'No project folder recorded for this session.' };
+      }
+      try {
+        const cmd = buildResumeCommand(provider, sessionId);
+        await openInTerminal(s.projectPath, cmd, getSettings().terminalApp);
+        return { ok: true };
+      } catch (e: any) {
+        reply.code(500);
+        return { error: e?.message ?? 'Failed to open terminal' };
+      }
+    },
+  );
 }
