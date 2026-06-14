@@ -3,7 +3,7 @@ import {
   buildResumeCommand,
   escapeForAppleScript,
   buildTerminalAppleScript,
-  buildWarpNewWindowUri,
+  buildWarpLaunchConfig,
 } from '../src/launch';
 
 describe('buildResumeCommand', () => {
@@ -42,10 +42,15 @@ describe('buildTerminalAppleScript', () => {
   });
 });
 
-describe('buildWarpNewWindowUri', () => {
-  it('builds a warp:// URI with the path percent-encoded', () => {
-    expect(buildWarpNewWindowUri('/Users/me/a b')).toBe(
-      'warp://action/new_window?path=%2FUsers%2Fme%2Fa%20b',
-    );
+describe('buildWarpLaunchConfig', () => {
+  it('produces YAML with the cwd and resume command under commands', () => {
+    const yaml = buildWarpLaunchConfig('cfg', '/Users/me/proj', 'claude --resume x');
+    expect(yaml).toContain('name: "cfg"');
+    expect(yaml).toContain('cwd: "/Users/me/proj"');
+    expect(yaml).toContain('- exec: "claude --resume x"');
+  });
+  it('double-quotes and escapes values containing quotes', () => {
+    const yaml = buildWarpLaunchConfig('cfg', '/Users/me/a"b', 'claude --resume x');
+    expect(yaml).toContain('cwd: "/Users/me/a\\"b"');
   });
 });

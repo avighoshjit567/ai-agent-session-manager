@@ -1,7 +1,11 @@
 import { spawn } from 'node:child_process';
+import os from 'node:os';
+import path from 'node:path';
+import fs from 'node:fs';
 import type { Provider, TerminalApp } from '../../shared/types.js';
 
 const SESSION_ID_RE = /^[A-Za-z0-9._-]+$/;
+const WARP_CONFIG_NAME = 'claude-codex-session-manager';
 
 export function buildResumeCommand(provider: Provider, sessionId: string): string {
   if (!SESSION_ID_RE.test(sessionId)) {
@@ -40,18 +44,28 @@ export function buildTerminalAppleScript(app: TerminalApp, cwd: string, command:
   ].join('\n');
 }
 
-export function buildWarpNewWindowUri(cwd: string): string {
-  // Documented Warp URI for opening a window at a working directory.
-  return `warp://action/new_window?path=${encodeURIComponent(cwd)}`;
+function yamlDoubleQuote(s: string): string {
+  return `"${s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
 }
 
-function copyToClipboard(text: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const child = spawn('pbcopy', { stdio: ['pipe', 'ignore', 'ignore'] });
-    child.on('error', reject);
-    child.on('exit', (code) => (code === 0 ? resolve() : reject(new Error(`pbcopy exited with code ${code}`))));
-    child.stdin?.end(text);
-  });
+// Build a Warp launch-configuration YAML that opens a tab in `cwd` and runs
+// `command`. Schema per Warp docs: windows[].tabs[].layout.{cwd,commands[].exec}.
+// `cwd` must be an absolute path. Values are double-quoted so paths/commands with
+// spaces or special characters stay valid YAML.
+export function buildWarpLaunchConfig(name: string, cwd: string, command: string): string {
+  return (
+    [
+      '---',
+      `name: ${yamlDoubleQuote(name)}`,
+      'windows:',
+      '  - tabs:',
+      `      - title: ${yamlDoubleQuote('Resume')}`,
+      '        layout:',
+      `          cwd: ${yamlDoubleQuote(cwd)}`,
+      '          commands:',
+      `            - exec: ${yamlDoubleQuote(command)}`,
+    ].join('\n') + '\n'
+  );
 }
 
 function openUri(uri: string): Promise<void> {
@@ -62,12 +76,16 @@ function openUri(uri: string): Promise<void> {
   });
 }
 
-// Warp can't be driven by AppleScript `do script`, so open it at the project
-// directory via its documented URI and put the resume command on the clipboard
-// for the user to paste.
+// Warp can't be driven by AppleScript `do script`. Instead, write a (reused)
+// launch-configuration YAML to ~/.warp/launch_configurations/ and open it via
+// the warp://launch URI, which opens a tab in the project directory and runs the
+// resume command automatically.
 async function openInWarp(projectPath: string, command: string): Promise<void> {
-  await copyToClipboard(command);
-  await openUri(buildWarpNewWindowUri(projectPath));
+  const dir = path.join(os.homedir(), '.warp', 'launch_configurations');
+  await fs.promises.mkdir(dir, { recursive: true });
+  const file = path.join(dir, `${WARP_CONFIG_NAME}.yaml`);
+  await fs.promises.writeFile(file, buildWarpLaunchConfig(WARP_CONFIG_NAME, projectPath, command), 'utf8');
+  await openUri(`warp://launch/${encodeURIComponent(WARP_CONFIG_NAME)}`);
 }
 
 export function openInEditor(projectPath: string, editorCommand: string): Promise<void> {
