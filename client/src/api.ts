@@ -12,10 +12,13 @@ import type {
 const BASE = '';
 
 async function http<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(BASE + url, {
-    headers: { 'content-type': 'application/json' },
-    ...init,
-  });
+  // Only declare a JSON body when we actually send one — Fastify rejects a
+  // bodyless POST that carries `content-type: application/json`.
+  const headers: Record<string, string> = { ...(init?.headers as Record<string, string> | undefined) };
+  if (init?.body !== undefined && headers['content-type'] === undefined) {
+    headers['content-type'] = 'application/json';
+  }
+  const res = await fetch(BASE + url, { ...init, headers });
   if (!res.ok) {
     const text = await res.text();
     let message = `${res.status} ${res.statusText}`;
@@ -99,5 +102,7 @@ export const api = {
     http<{ ok: true }>(`/api/sessions/${provider}/${sessionId}/open-editor`, { method: 'POST' }),
 
   openInTerminal: (provider: Provider, sessionId: string) =>
-    http<{ ok: true }>(`/api/sessions/${provider}/${sessionId}/open-terminal`, { method: 'POST' }),
+    http<{ ok: true; message?: string }>(`/api/sessions/${provider}/${sessionId}/open-terminal`, {
+      method: 'POST',
+    }),
 };

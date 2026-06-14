@@ -3,6 +3,7 @@ import {
   buildResumeCommand,
   escapeForAppleScript,
   buildTerminalAppleScript,
+  buildWarpNewWindowUri,
 } from '../src/launch';
 
 describe('buildResumeCommand', () => {
@@ -38,5 +39,13 @@ describe('buildTerminalAppleScript', () => {
   it('escapes a double quote in the cwd for the AppleScript string literal', () => {
     const s = buildTerminalAppleScript('Terminal', '/Users/me/a"b', 'claude --resume x');
     expect(s).toContain('\\"');
+  });
+});
+
+describe('buildWarpNewWindowUri', () => {
+  it('builds a warp:// URI with the path percent-encoded', () => {
+    expect(buildWarpNewWindowUri('/Users/me/a b')).toBe(
+      'warp://action/new_window?path=%2FUsers%2Fme%2Fa%20b',
+    );
   });
 });

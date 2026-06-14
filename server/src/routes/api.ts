@@ -192,8 +192,14 @@ export async function registerApi(app: FastifyInstance): Promise<void> {
       }
       try {
         const cmd = buildResumeCommand(provider, sessionId);
-        await openInTerminal(s.projectPath, cmd, getSettings().terminalApp);
-        return { ok: true };
+        const app = getSettings().terminalApp;
+        await openInTerminal(s.projectPath, cmd, app);
+        return app === 'Warp'
+          ? {
+              ok: true,
+              message: 'Opened Warp — resume command copied to clipboard. Press ⌘V then Enter to resume.',
+            }
+          : { ok: true };
       } catch (e: any) {
         reply.code(500);
         return { error: e?.message ?? 'Failed to open terminal' };

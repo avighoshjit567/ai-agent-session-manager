@@ -22,6 +22,12 @@ describe('settings', () => {
     expect(getSettings(db)).toEqual({ editorCommand: 'cursor', terminalApp: 'iTerm' });
   });
 
+  it('accepts Warp as a terminal app', () => {
+    const db = freshDb();
+    saveSettings({ terminalApp: 'Warp' }, db);
+    expect(getSettings(db).terminalApp).toBe('Warp');
+  });
+
   it('coerces an unknown terminalApp back to the default', () => {
     const db = freshDb();
     db.prepare(`INSERT INTO settings (key, value) VALUES ('terminalApp', 'bogus')`).run();

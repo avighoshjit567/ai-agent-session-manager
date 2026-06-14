@@ -99,7 +99,7 @@ export interface Note {
   updatedAt: string;
 }
 
-export type TerminalApp = 'Terminal' | 'iTerm';
+export type TerminalApp = 'Terminal' | 'iTerm' | 'Warp';
 
 export interface AppSettings {
   editorCommand: string;

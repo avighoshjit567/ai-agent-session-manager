@@ -3,7 +3,7 @@ import { getDb } from './db.js';
 import type { AppSettings, TerminalApp } from '../../shared/types.js';
 
 const DEFAULTS: AppSettings = { editorCommand: 'code', terminalApp: 'Terminal' };
-const VALID_TERMINALS: TerminalApp[] = ['Terminal', 'iTerm'];
+const VALID_TERMINALS: TerminalApp[] = ['Terminal', 'iTerm', 'Warp'];
 
 export function getSettings(db: Database.Database = getDb()): AppSettings {
   const rows = db.prepare(`SELECT key, value FROM settings`).all() as Array<{ key: string; value: string }>;

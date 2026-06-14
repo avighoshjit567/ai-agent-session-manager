@@ -40,6 +40,36 @@ export function buildTerminalAppleScript(app: TerminalApp, cwd: string, command:
   ].join('\n');
 }
 
+export function buildWarpNewWindowUri(cwd: string): string {
+  // Documented Warp URI for opening a window at a working directory.
+  return `warp://action/new_window?path=${encodeURIComponent(cwd)}`;
+}
+
+function copyToClipboard(text: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn('pbcopy', { stdio: ['pipe', 'ignore', 'ignore'] });
+    child.on('error', reject);
+    child.on('exit', (code) => (code === 0 ? resolve() : reject(new Error(`pbcopy exited with code ${code}`))));
+    child.stdin?.end(text);
+  });
+}
+
+function openUri(uri: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn('open', [uri], { stdio: 'ignore' });
+    child.on('error', reject);
+    child.on('exit', (code) => (code === 0 ? resolve() : reject(new Error(`open exited with code ${code}`))));
+  });
+}
+
+// Warp can't be driven by AppleScript `do script`, so open it at the project
+// directory via its documented URI and put the resume command on the clipboard
+// for the user to paste.
+async function openInWarp(projectPath: string, command: string): Promise<void> {
+  await copyToClipboard(command);
+  await openUri(buildWarpNewWindowUri(projectPath));
+}
+
 export function openInEditor(projectPath: string, editorCommand: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawn(editorCommand, [projectPath], { detached: true, stdio: 'ignore' });
@@ -58,6 +88,9 @@ export function openInTerminal(
 ): Promise<void> {
   if (process.platform !== 'darwin') {
     return Promise.reject(new Error('Open in terminal is only supported on macOS.'));
+  }
+  if (terminalApp === 'Warp') {
+    return openInWarp(projectPath, command);
   }
   const script = buildTerminalAppleScript(terminalApp, projectPath, command);
   return new Promise((resolve, reject) => {

@@ -74,6 +74,7 @@ onMounted(() => {
           >
             <option value="Terminal">Terminal</option>
             <option value="iTerm">iTerm</option>
+            <option value="Warp">Warp</option>
           </select>
         </label>
       </div>

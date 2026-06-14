@@ -27,8 +27,8 @@ async function openTerminal() {
   if (!session.value) return;
   opening.value = true;
   try {
-    await api.openInTerminal(session.value.provider as Provider, session.value.sessionId);
-    toast.success('Opening in terminal…');
+    const res = await api.openInTerminal(session.value.provider as Provider, session.value.sessionId);
+    toast.success(res?.message ?? 'Opening in terminal…');
   } catch (e: any) {
     toast.error(e?.message ?? 'Failed to open terminal');
   } finally {
