@@ -98,3 +98,10 @@ export interface Note {
   lessons: string;
   updatedAt: string;
 }
+
+export type TerminalApp = 'Terminal' | 'iTerm';
+
+export interface AppSettings {
+  editorCommand: string;
+  terminalApp: TerminalApp;
+}
