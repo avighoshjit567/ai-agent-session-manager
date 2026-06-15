@@ -10,8 +10,9 @@ const routes: RouteRecordRaw[] = [
     component: () => import('./pages/SessionDetail.vue'),
     props: true,
   },
-  { path: '/search', name: 'search', component: () => import('./pages/Search.vue') },
   { path: '/settings', name: 'settings', component: () => import('./pages/Settings.vue') },
+  // The old Search page is replaced by the ⌘K command palette; keep old links working.
+  { path: '/search', redirect: { name: 'sessions' } },
 ];
 
 export const router = createRouter({

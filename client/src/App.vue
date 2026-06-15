@@ -4,9 +4,13 @@ import { RouterLink, RouterView } from 'vue-router';
 import { api } from './api';
 import ToastHost from './components/ToastHost.vue';
 import ThemeToggle from './components/ThemeToggle.vue';
+import CommandPalette from './components/CommandPalette.vue';
 import { useToast } from './composables/useToast';
+import { useCommandPalette } from './composables/useCommandPalette';
 
 const toast = useToast();
+const palette = useCommandPalette();
+const isMac = typeof navigator !== 'undefined' && /Mac|iP(hone|ad|od)/.test(navigator.platform);
 const indexing = ref(false);
 const indexStats = ref<{ claudeSessions: number; codexSessions: number } | null>(null);
 
@@ -34,6 +38,7 @@ async function rebuild() {
 }
 
 onMounted(() => {
+  palette.attachShortcut();
   pollStatus();
   setInterval(pollStatus, 3000);
 });
@@ -53,11 +58,6 @@ const nav = [
     to: '/sessions',
     label: 'Sessions',
     icon: 'M4 6h16M4 12h16M4 18h10',
-  },
-  {
-    to: '/search',
-    label: 'Search',
-    icon: 'M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16zM21 21l-4.35-4.35',
   },
   {
     to: '/settings',
@@ -130,13 +130,42 @@ const nav = [
         </button>
       </div>
     </aside>
-    <main class="flex-1 overflow-y-auto">
-      <RouterView v-slot="{ Component }">
-        <transition name="fade" mode="out-in">
-          <component :is="Component" />
-        </transition>
-      </RouterView>
+    <main class="flex-1 flex flex-col min-w-0">
+      <header
+        class="shrink-0 h-14 border-b border-zinc-200 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-950/80 backdrop-blur flex items-center px-4"
+      >
+        <button
+          type="button"
+          class="group flex items-center gap-2 w-full max-w-md px-3 py-1.5 rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 text-sm text-zinc-500 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors"
+          @click="palette.open()"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="h-4 w-4 opacity-70"
+          >
+            <path d="M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16zM21 21l-4.35-4.35" />
+          </svg>
+          <span class="flex-1 text-left">Search…</span>
+          <kbd
+            class="text-[10px] font-sans px-1.5 py-0.5 rounded border border-zinc-200 dark:border-zinc-700 text-zinc-400"
+          >{{ isMac ? '⌘' : 'Ctrl' }} K</kbd>
+        </button>
+      </header>
+      <div class="flex-1 overflow-y-auto">
+        <RouterView v-slot="{ Component }">
+          <transition name="fade" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </RouterView>
+      </div>
     </main>
+    <CommandPalette />
     <ToastHost />
   </div>
 </template>
