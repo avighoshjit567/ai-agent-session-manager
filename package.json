@@ -5,15 +5,24 @@
   "engines": {
     "node": ">=20.10.0"
   },
-  "workspaces": ["server", "client"],
+  "workspaces": [
+    "server",
+    "client"
+  ],
   "scripts": {
     "dev": "concurrently -k -n server,client -c blue,green \"npm -w server run dev\" \"npm -w client run dev\"",
     "build": "npm -w client run build && npm -w server run build",
     "start": "node server/dist/server/src/index.js",
+    "service:install": "npm run build && pm2 start ecosystem.config.cjs --update-env && pm2 save && node scripts/boot-hint.mjs",
+    "service:uninstall": "pm2 delete ecosystem.config.cjs && pm2 save --force",
+    "service:restart": "npm run build && pm2 restart ecosystem.config.cjs --update-env",
+    "service:status": "pm2 status",
+    "service:logs": "pm2 logs claude-codex-session-manager",
     "typecheck": "npm -w server run typecheck && npm -w client run typecheck",
     "test": "npm -w server run test && npm -w client run test"
   },
   "devDependencies": {
-    "concurrently": "^9.1.0"
+    "concurrently": "^9.1.0",
+    "pm2": "^7.0.1"
   }
 }

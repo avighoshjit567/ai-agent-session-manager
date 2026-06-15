@@ -69,6 +69,50 @@ npm start
 
 `npm start` serves the built Vue client and the Fastify API from one port — no separate dev server needed.
 
+### Keep it running forever (background service)
+
+`npm start` stops the moment you close the terminal it's running in. To start
+the server once and have it **stay up after you close your terminal** — and
+restart itself if it ever crashes — run it under [pm2](https://pm2.keymetrics.io/).
+pm2 ships as a dev dependency, so this works the same on **macOS, Linux, and
+Windows** with no global install:
+
+```bash
+npm run service:install     # build + start under pm2; survives closing the terminal
+npm run service:status      # is it running? (pm2 process table)
+npm run service:logs        # tail the logs
+npm run service:restart     # rebuild + restart (after pulling changes)
+npm run service:uninstall   # stop and remove the process
+```
+
+After `service:install` the app stays available at http://localhost:8787 with no
+terminal window open, and pm2 relaunches it automatically if the process exits.
+
+**Start automatically after a reboot** (one-time, OS-specific — the only step pm2
+can't fully script because it needs elevated permissions):
+
+```bash
+# macOS / Linux
+npx pm2 startup            # prints a `sudo …` command — run that once
+npx pm2 save              # remember the current process list
+
+# Windows (PowerShell)
+npm i -g pm2 pm2-windows-startup
+pm2-startup install
+pm2 save
+```
+
+Notes:
+
+- Override the port/host at install time: `PORT=9000 npm run service:install`
+  (read by `ecosystem.config.cjs`). Re-run `service:install` to change them.
+- `service:install` runs `npm run build` first, so the served client/server are
+  always up to date.
+- pm2 stores its state and logs under `~/.pm2/` (`npx pm2 logs` /
+  `npx pm2 flush`).
+- Prefer zero dependencies? The native equivalents are `launchd` (macOS) and a
+  `systemd --user` unit (Linux) pointing at `node server/dist/server/src/index.js`.
+
 ### Configuration
 
 Environment variables (all optional):
