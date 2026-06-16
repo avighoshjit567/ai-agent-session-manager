@@ -73,12 +73,16 @@ export function initSchema(d: Database.Database): void {
     }
   }
 
-  // FTS5 cannot ALTER ADD COLUMN. If an older sessions_fts exists without `body`,
-  // drop it here and flag a one-time forced reindex to repopulate the column.
+  // FTS5 cannot ALTER ADD COLUMN. If an older sessions_fts exists without a
+  // column we now index (`body`, `display_name`), drop it here and flag a
+  // one-time forced reindex to repopulate the columns.
   const existingFtsCols = (
     d.prepare(`PRAGMA table_info(sessions_fts)`).all() as any[]
   ).map((c) => c.name as string);
-  if (existingFtsCols.length > 0 && !existingFtsCols.includes('body')) {
+  if (
+    existingFtsCols.length > 0 &&
+    (!existingFtsCols.includes('body') || !existingFtsCols.includes('display_name'))
+  ) {
     d.exec(`DROP TABLE sessions_fts`);
     ftsReindex = true;
   }
@@ -97,6 +101,7 @@ export function initSchema(d: Database.Database): void {
       project_path,
       git_branch,
       first_user_message,
+      display_name,
       body,
       tokenize = 'porter unicode61'
     );
@@ -116,6 +121,17 @@ export function initSchema(d: Database.Database): void {
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
+    );
+
+    -- User overlay metadata (custom name + color). Kept separate from the
+    -- rebuildable index so it survives reindexing, like notes.
+    CREATE TABLE IF NOT EXISTS session_meta (
+      provider TEXT NOT NULL,
+      session_id TEXT NOT NULL,
+      display_name TEXT,
+      color TEXT,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (provider, session_id)
     );
   `);
 }

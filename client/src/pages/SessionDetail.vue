@@ -8,10 +8,35 @@ import ResumeCommand from '../components/ResumeCommand.vue';
 import CopyButton from '../components/CopyButton.vue';
 import ContextBar from '../components/ContextBar.vue';
 import TokenBreakdown from '../components/TokenBreakdown.vue';
+import SessionLabelEditor from '../components/SessionLabelEditor.vue';
+import { dotClass } from '../lib/sessionColor';
+import type { SessionColor } from '@shared/types';
 import { useToast } from '../composables/useToast';
 
 const props = defineProps<{ provider: string; sessionId: string }>();
 const toast = useToast();
+
+const editingLabel = ref(false);
+const editorPos = ref<{ top: number; left: number }>({ top: 0, left: 0 });
+
+const headerTitle = computed(() => {
+  const s = session.value;
+  if (!s) return '';
+  return s.displayName?.trim() || s.title || s.firstUserMessage?.slice(0, 140) || '(no title)';
+});
+
+function openLabelEditor(e: MouseEvent) {
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+  editorPos.value = { top: rect.bottom + 4, left: Math.max(8, rect.left) };
+  editingLabel.value = true;
+}
+
+function onLabelSaved(meta: { displayName: string | null; color: SessionColor | null }) {
+  if (session.value) {
+    session.value.displayName = meta.displayName;
+    session.value.color = meta.color;
+  }
+}
 
 const session = ref<Session | null>(null);
 const timeline = ref<TimelineItem[]>([]);
@@ -22,6 +47,20 @@ const mask = ref(true);
 const exporting = ref(false);
 const exportPath = ref<string | null>(null);
 const opening = ref(false);
+const forking = ref(false);
+
+async function fork() {
+  if (!session.value) return;
+  forking.value = true;
+  try {
+    const res = await api.forkSession(session.value.provider as Provider, session.value.sessionId);
+    toast.success(res?.message ?? 'Forking session…');
+  } catch (e: any) {
+    toast.error(e?.message ?? 'Failed to fork session');
+  } finally {
+    forking.value = false;
+  }
+}
 
 async function openTerminal() {
   if (!session.value) return;
@@ -137,15 +176,35 @@ const stats = computed(() => {
             >
             <ProviderAvatar :provider="session.provider" size="md" />
             <div class="flex-1 min-w-0">
-              <h1
-                class="text-base font-semibold text-zinc-900 dark:text-zinc-100 leading-snug line-clamp-2"
+              <div class="flex items-center gap-2">
+                <span
+                  v-if="session.color"
+                  class="h-2.5 w-2.5 rounded-full shrink-0"
+                  :class="dotClass(session.color)"
+                />
+                <h1
+                  class="text-base font-semibold text-zinc-900 dark:text-zinc-100 leading-snug line-clamp-2"
+                >
+                  {{ headerTitle }}
+                </h1>
+                <button
+                  type="button"
+                  title="Rename / set color"
+                  class="shrink-0 p-1 rounded text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                  @click="openLabelEditor"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5">
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                  </svg>
+                </button>
+              </div>
+              <div
+                v-if="session.displayName && (session.title || session.firstUserMessage)"
+                class="mt-0.5 text-xs text-zinc-500 truncate"
               >
-                {{
-                  session.title ||
-                  session.firstUserMessage?.slice(0, 140) ||
-                  '(no title)'
-                }}
-              </h1>
+                {{ session.title || session.firstUserMessage?.slice(0, 140) }}
+              </div>
               <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500">
                 <span v-if="session.projectPath" class="truncate max-w-[260px]" :title="session.projectPath">
                   📁 {{ session.projectPath }}
@@ -183,6 +242,24 @@ const stats = computed(() => {
                 <polyline points="8 6 2 12 8 18" />
               </svg>
               Editor
+            </button>
+            <button
+              class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-violet-500/40 hover:border-violet-400/70 hover:bg-violet-500/10 text-[11px] text-violet-600 dark:text-violet-300 transition-colors disabled:opacity-50"
+              :disabled="forking"
+              :title="
+                session.provider === 'claude'
+                  ? 'Start a new session carrying this one\'s full context (claude --fork-session). The original is left untouched.'
+                  : 'Export this session and start a new Codex session seeded with its full transcript. The original is left untouched.'
+              "
+              @click="fork"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5">
+                <line x1="6" x2="6" y1="3" y2="15" />
+                <circle cx="18" cy="6" r="3" />
+                <circle cx="6" cy="18" r="3" />
+                <path d="M18 9a9 9 0 0 1-9 9" />
+              </svg>
+              {{ forking ? 'Forking…' : 'Fork to new session' }}
             </button>
             <span class="text-zinc-700">·</span>
             <span class="inline-flex items-center gap-1 text-[11px] text-zinc-500">
@@ -294,6 +371,25 @@ const stats = computed(() => {
           </div>
         </aside>
       </div>
+
+      <Teleport to="body">
+        <div v-if="editingLabel" class="fixed inset-0 z-50" @click="editingLabel = false">
+          <div
+            class="absolute"
+            :style="{ top: editorPos.top + 'px', left: editorPos.left + 'px' }"
+            @click.stop
+          >
+            <SessionLabelEditor
+              :provider="session.provider"
+              :session-id="session.sessionId"
+              :display-name="session.displayName"
+              :color="session.color"
+              @saved="onLabelSaved"
+              @close="editingLabel = false"
+            />
+          </div>
+        </div>
+      </Teleport>
     </template>
   </div>
 </template>

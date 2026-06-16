@@ -15,8 +15,13 @@ const COLS = `
   s.cache_read_tokens AS cacheReadTokens,
   s.cache_creation_tokens AS cacheCreationTokens,
   s.last_context_tokens AS lastContextTokens,
-  s.context_window AS contextWindow
+  s.context_window AS contextWindow,
+  m.display_name AS displayName, m.color AS color
 `;
+
+// Overlay metadata (custom name + color) lives in session_meta; join it into
+// every read so the list, detail, and dashboard all carry it.
+const META_JOIN = `LEFT JOIN session_meta m ON m.provider = s.provider AND m.session_id = s.session_id`;
 
 export function listSessions(filter: SessionFilter): { items: SessionListItem[]; total: number } {
   const db = getDb();
@@ -63,7 +68,7 @@ export function listSessions(filter: SessionFilter): { items: SessionListItem[];
 
   const hasQuery = !!(filter.q && filter.q.trim());
   const snippetSelect = hasQuery
-    ? `, snippet(sessions_fts, 6, char(2), char(3), '…', 12) AS matchSnippet`
+    ? `, snippet(sessions_fts, 7, char(2), char(3), '…', 12) AS matchSnippet`
     : '';
   const orderSql = hasQuery
     ? `ORDER BY bm25(sessions_fts)`
@@ -81,7 +86,7 @@ export function listSessions(filter: SessionFilter): { items: SessionListItem[];
 
   const rows = db
     .prepare(
-      `SELECT ${COLS}${snippetSelect} FROM sessions s ${joinFts} ${whereSql}
+      `SELECT ${COLS}${snippetSelect} FROM sessions s ${META_JOIN} ${joinFts} ${whereSql}
        ${orderSql}
        LIMIT @limit OFFSET @offset`,
     )
@@ -96,7 +101,7 @@ export function listSessions(filter: SessionFilter): { items: SessionListItem[];
 export function getSession(provider: string, sessionId: string): Session | null {
   const db = getDb();
   const row = db
-    .prepare(`SELECT ${COLS} FROM sessions s WHERE s.provider = ? AND s.session_id = ?`)
+    .prepare(`SELECT ${COLS} FROM sessions s ${META_JOIN} WHERE s.provider = ? AND s.session_id = ?`)
     .get(provider, sessionId) as any;
   return row ? toSession(row) : null;
 }
@@ -150,7 +155,7 @@ export function dashboardStats(): {
   const recent = (
     db
       .prepare(
-        `SELECT ${COLS} FROM sessions s ORDER BY COALESCE(s.updated_at, s.created_at) DESC LIMIT 10`,
+        `SELECT ${COLS} FROM sessions s ${META_JOIN} ORDER BY COALESCE(s.updated_at, s.created_at) DESC LIMIT 10`,
       )
       .all() as any[]
   ).map(toSession);
@@ -160,7 +165,7 @@ export function dashboardStats(): {
   const active = (
     db
       .prepare(
-        `SELECT ${COLS} FROM sessions s
+        `SELECT ${COLS} FROM sessions s ${META_JOIN}
          WHERE COALESCE(s.updated_at, s.created_at) >= ?
          ORDER BY COALESCE(s.updated_at, s.created_at) DESC LIMIT 5`,
       )
@@ -213,5 +218,7 @@ function toSession(r: any): Session {
     cacheCreationTokens: r.cacheCreationTokens ?? null,
     lastContextTokens: r.lastContextTokens ?? null,
     contextWindow: r.contextWindow ?? null,
+    displayName: r.displayName ?? null,
+    color: r.color ?? null,
   };
 }

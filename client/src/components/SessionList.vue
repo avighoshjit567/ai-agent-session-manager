@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import type { SessionListItem } from '@shared/types';
+import type { SessionListItem, SessionColor } from '@shared/types';
 import ProviderAvatar from './ProviderAvatar.vue';
 import { highlightSnippet } from '../lib/highlight';
 import SessionIdChip from './SessionIdChip.vue';
 import CopyButton from './CopyButton.vue';
 import ContextBar from './ContextBar.vue';
+import SessionLabelEditor from './SessionLabelEditor.vue';
+import { tintClass, barClass } from '../lib/sessionColor';
 
 const props = defineProps<{ sessions: SessionListItem[]; loading?: boolean }>();
 const router = useRouter();
@@ -15,6 +17,30 @@ const rows = computed(() => props.sessions);
 
 function open(s: SessionListItem) {
   router.push({ name: 'session-detail', params: { provider: s.provider, sessionId: s.sessionId } });
+}
+
+// Custom-name overlay: show the user's name as the primary line; keep the
+// original title/first-prompt as a muted subtitle so context isn't lost.
+function displayTitle(s: SessionListItem): string {
+  return s.displayName?.trim() || preview(s);
+}
+
+// Inline name/color editor, teleported & fixed-positioned (the list wrapper
+// clips overflow, so an in-row popover wouldn't show).
+const editing = ref<SessionListItem | null>(null);
+const editorPos = ref<{ top: number; left: number }>({ top: 0, left: 0 });
+
+function openEditor(s: SessionListItem, e: MouseEvent) {
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+  editorPos.value = { top: rect.bottom + 4, left: Math.max(8, rect.right - 256) };
+  editing.value = s;
+}
+
+function onSaved(meta: { displayName: string | null; color: SessionColor | null }) {
+  if (editing.value) {
+    editing.value.displayName = meta.displayName;
+    editing.value.color = meta.color;
+  }
 }
 
 function fmtDate(iso: string | null): string {
@@ -80,13 +106,23 @@ function resumeCmd(s: SessionListItem): string {
           v-for="s in rows"
           :key="`${s.provider}:${s.sessionId}`"
           class="group border-t border-zinc-100 dark:border-zinc-900/80 hover:bg-zinc-50 dark:hover:bg-zinc-900/40 cursor-pointer transition-colors"
+          :class="tintClass(s.color)"
           @click="open(s)"
         >
-          <td class="px-3 py-2.5 align-top">
+          <td class="px-3 py-2.5 align-top relative">
+            <span
+              v-if="s.color"
+              class="absolute inset-y-0 left-0 w-1"
+              :class="barClass(s.color)"
+            />
             <ProviderAvatar :provider="s.provider" size="sm" />
           </td>
           <td class="px-3 py-2.5 max-w-[420px]">
-            <div class="text-zinc-900 dark:text-zinc-100 leading-snug line-clamp-2">{{ preview(s) }}</div>
+            <div class="text-zinc-900 dark:text-zinc-100 leading-snug line-clamp-2">{{ displayTitle(s) }}</div>
+            <div
+              v-if="s.displayName"
+              class="text-[11px] text-zinc-500 dark:text-zinc-500 truncate leading-snug"
+            >{{ preview(s) }}</div>
             <div
               v-if="highlightSnippet(s.matchSnippet)"
               class="mt-1 text-[11.5px] text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-snug"
@@ -136,14 +172,48 @@ function resumeCmd(s: SessionListItem): string {
           </td>
           <td class="px-3 py-2.5 align-top text-right">
             <div
-              class="opacity-0 group-hover:opacity-100 transition-opacity inline-flex"
+              class="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1"
               @click.stop
             >
+              <button
+                type="button"
+                title="Rename / set color"
+                class="p-1 rounded text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-200/60 dark:hover:bg-zinc-800"
+                @click.stop="openEditor(s, $event)"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5">
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                </svg>
+              </button>
               <CopyButton :value="resumeCmd(s)" label="resume command" />
             </div>
           </td>
         </tr>
       </tbody>
     </table>
+
+    <Teleport to="body">
+      <div
+        v-if="editing"
+        class="fixed inset-0 z-50"
+        @click="editing = null"
+      >
+        <div
+          class="absolute"
+          :style="{ top: editorPos.top + 'px', left: editorPos.left + 'px' }"
+          @click.stop
+        >
+          <SessionLabelEditor
+            :provider="editing.provider"
+            :session-id="editing.sessionId"
+            :display-name="editing.displayName"
+            :color="editing.color"
+            @saved="onSaved"
+            @close="editing = null"
+          />
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>

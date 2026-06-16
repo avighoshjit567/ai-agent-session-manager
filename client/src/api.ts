@@ -7,6 +7,8 @@ import type {
   Provider,
   SessionFilter,
   AppSettings,
+  SessionMeta,
+  SessionColor,
 } from '@shared/types';
 
 const BASE = '';
@@ -104,5 +106,20 @@ export const api = {
   openInTerminal: (provider: Provider, sessionId: string) =>
     http<{ ok: true; message?: string }>(`/api/sessions/${provider}/${sessionId}/open-terminal`, {
       method: 'POST',
+    }),
+
+  forkSession: (provider: Provider, sessionId: string) =>
+    http<{ ok: true; message?: string }>(`/api/sessions/${provider}/${sessionId}/fork`, {
+      method: 'POST',
+    }),
+
+  saveMeta: (
+    provider: Provider,
+    sessionId: string,
+    meta: { displayName?: string | null; color?: SessionColor | null },
+  ) =>
+    http<SessionMeta>(`/api/sessions/${provider}/${sessionId}/meta`, {
+      method: 'PUT',
+      body: JSON.stringify(meta),
     }),
 };

@@ -29,6 +29,31 @@ export interface Session {
   lastContextTokens: number | null;
   // Model context window (e.g., 200000, 1000000). Best estimate.
   contextWindow: number | null;
+  // User overlay metadata (stored in the app DB, never in the source files).
+  // Custom name shown instead of the title; color is a palette key (see SESSION_COLORS).
+  displayName: string | null;
+  color: SessionColor | null;
+}
+
+// Curated palette for per-session color labels. Stored as a key so it can be
+// themed for light/dark on the client. `null` / absent means "no color".
+export const SESSION_COLORS = [
+  'slate',
+  'red',
+  'amber',
+  'green',
+  'sky',
+  'violet',
+  'pink',
+  'gray',
+] as const;
+export type SessionColor = (typeof SESSION_COLORS)[number];
+
+export interface SessionMeta {
+  provider: Provider;
+  sessionId: string;
+  displayName: string | null;
+  color: SessionColor | null;
 }
 
 export interface SessionListItem extends Session {

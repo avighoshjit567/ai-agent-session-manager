@@ -39,6 +39,8 @@ function session(partial: Partial<SessionListItem>): SessionListItem {
     cacheCreationTokens: null,
     lastContextTokens: null,
     contextWindow: null,
+    displayName: null,
+    color: null,
     ...partial,
   };
 }
@@ -113,6 +115,11 @@ describe('buildSessionCommands', () => {
   it('uses the project path as sublabel when present', () => {
     const r = buildSessionCommands([session({ title: 'T', projectPath: '/a/b' })]);
     expect(r[0].sublabel).toBe('/a/b');
+  });
+
+  it('prefers the custom display name over the title', () => {
+    const r = buildSessionCommands([session({ title: 'Original title', displayName: 'My label' })]);
+    expect(r[0].label).toBe('My label');
   });
 });
 

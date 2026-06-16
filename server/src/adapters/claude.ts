@@ -218,6 +218,8 @@ export async function parseClaudeSession(file: ClaudeSessionFile): Promise<Claud
     cacheCreationTokens: cacheCreationTokens > 0 ? cacheCreationTokens : null,
     lastContextTokens,
     contextWindow: lastContextTokens !== null ? contextWindow : null,
+    displayName: null,
+    color: null,
   };
 
   return { session, events, body };

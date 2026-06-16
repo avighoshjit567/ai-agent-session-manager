@@ -14,6 +14,30 @@ export function buildResumeCommand(provider: Provider, sessionId: string): strin
   return provider === 'claude' ? `claude --resume ${sessionId}` : `codex resume ${sessionId}`;
 }
 
+// Fork a Claude session into a brand-new one carrying its full history, leaving
+// the original untouched (`--fork-session` requires `--resume`).
+export function buildClaudeForkCommand(sessionId: string): string {
+  if (!SESSION_ID_RE.test(sessionId)) {
+    throw new Error(`Invalid session id: ${sessionId}`);
+  }
+  return `claude --resume ${sessionId} --fork-session`;
+}
+
+// Wrap a string as a single double-quoted shell argument, escaping the four
+// characters the shell still interprets inside double quotes.
+export function shellDoubleQuote(s: string): string {
+  return `"${s.replace(/(["\\$`])/g, '\\$1')}"`;
+}
+
+// Codex has no native fork, so start a NEW codex session seeded to read the
+// exported transcript of the previous one — the closest analog to a fork.
+export function buildCodexSeedCommand(handoffPath: string): string {
+  const prompt =
+    `Read the file ${handoffPath} — it is the full transcript and context of a ` +
+    `previous session. Use it as context and continue the work from where it left off.`;
+  return `codex ${shellDoubleQuote(prompt)}`;
+}
+
 export function escapeForAppleScript(s: string): string {
   return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }

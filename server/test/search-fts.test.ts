@@ -7,13 +7,13 @@ const START = String.fromCharCode(2);
 function seed(db: Database.Database) {
   const ins = db.prepare(
     `INSERT INTO sessions_fts
-       (provider, session_id, title, project_path, git_branch, first_user_message, body)
-     VALUES (?,?,?,?,?,?,?)`,
+       (provider, session_id, title, project_path, git_branch, first_user_message, display_name, body)
+     VALUES (?,?,?,?,?,?,?,?)`,
   );
   ins.run('claude', 'a', 'Fix billing bug', '/p', 'main', 'please fix billing',
-    'we changed the invoice generator and the redis cache layer');
+    'Zephyr workstream', 'we changed the invoice generator and the redis cache layer');
   ins.run('claude', 'b', 'Unrelated chat', '/p', 'main', 'hello there',
-    'we discussed kubernetes deployment strategy');
+    '', 'we discussed kubernetes deployment strategy');
 }
 
 describe('FTS body search', () => {
@@ -23,12 +23,22 @@ describe('FTS body search', () => {
     seed(db);
     const row = db.prepare(
       `SELECT session_id,
-              snippet(sessions_fts, 6, char(2), char(3), '…', 12) AS snip
+              snippet(sessions_fts, 7, char(2), char(3), '…', 12) AS snip
        FROM sessions_fts WHERE sessions_fts MATCH ? ORDER BY bm25(sessions_fts)`,
     ).get('redis') as any;
     expect(row.session_id).toBe('a');
     expect(row.snip).toContain(START);
     expect(String(row.snip).toLowerCase()).toContain('redis');
+  });
+
+  it('finds a session by its custom display name', () => {
+    const db = new Database(':memory:');
+    initSchema(db);
+    seed(db);
+    const row = db.prepare(
+      `SELECT session_id FROM sessions_fts WHERE sessions_fts MATCH ? ORDER BY bm25(sessions_fts)`,
+    ).get('zephyr') as any;
+    expect(row.session_id).toBe('a');
   });
 
   it('ranks the strongest match first via bm25', () => {

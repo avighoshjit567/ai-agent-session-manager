@@ -88,7 +88,7 @@ export function filterProjects(projects: ProjectSummary[], query: string, limit 
 }
 
 function sessionLabel(s: SessionListItem): string {
-  return s.title?.trim() || s.firstUserMessage?.trim() || 'Untitled session';
+  return s.displayName?.trim() || s.title?.trim() || s.firstUserMessage?.trim() || 'Untitled session';
 }
 
 export function buildSessionCommands(items: SessionListItem[]): Command[] {

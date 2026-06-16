@@ -162,14 +162,19 @@ function upsertSession(s: Session, mtime: number, body: string): void {
     contextWindow: s.contextWindow,
   });
 
+  // Carry the user's custom name into the FTS row so it stays searchable.
+  const meta = db
+    .prepare(`SELECT display_name AS displayName FROM session_meta WHERE provider = ? AND session_id = ?`)
+    .get(s.provider, s.sessionId) as { displayName: string | null } | undefined;
+
   // Refresh FTS row
   db.prepare(`DELETE FROM sessions_fts WHERE provider = ? AND session_id = ?`).run(
     s.provider,
     s.sessionId,
   );
   db.prepare(
-    `INSERT INTO sessions_fts (provider, session_id, title, project_path, git_branch, first_user_message, body)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO sessions_fts (provider, session_id, title, project_path, git_branch, first_user_message, display_name, body)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     s.provider,
     s.sessionId,
@@ -177,6 +182,7 @@ function upsertSession(s: Session, mtime: number, body: string): void {
     s.projectPath ?? '',
     s.gitBranch ?? '',
     s.firstUserMessage ?? '',
+    meta?.displayName ?? '',
     body ?? '',
   );
 }

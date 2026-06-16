@@ -4,6 +4,9 @@ import {
   escapeForAppleScript,
   buildTerminalAppleScript,
   buildWarpLaunchConfig,
+  buildClaudeForkCommand,
+  shellDoubleQuote,
+  buildCodexSeedCommand,
 } from '../src/launch';
 
 describe('buildResumeCommand', () => {
@@ -39,6 +42,40 @@ describe('buildTerminalAppleScript', () => {
   it('escapes a double quote in the cwd for the AppleScript string literal', () => {
     const s = buildTerminalAppleScript('Terminal', '/Users/me/a"b', 'claude --resume x');
     expect(s).toContain('\\"');
+  });
+});
+
+describe('buildClaudeForkCommand', () => {
+  it('forks a resumed session into a new one', () => {
+    expect(buildClaudeForkCommand('abc-123')).toBe('claude --resume abc-123 --fork-session');
+  });
+  it('rejects a session id with shell metacharacters', () => {
+    expect(() => buildClaudeForkCommand('a; rm -rf /')).toThrow();
+  });
+});
+
+describe('shellDoubleQuote', () => {
+  it('wraps a plain string in double quotes', () => {
+    expect(shellDoubleQuote('hello world')).toBe('"hello world"');
+  });
+  it('escapes double quotes, backslashes, $ and backticks', () => {
+    expect(shellDoubleQuote('a"b\\c$d`e')).toBe('"a\\"b\\\\c\\$d\\`e"');
+  });
+});
+
+describe('buildCodexSeedCommand', () => {
+  it('starts a new codex session that reads the handoff file', () => {
+    const cmd = buildCodexSeedCommand('/Users/me/exports/2026-06-16-codex-foo.md');
+    expect(cmd.startsWith('codex "')).toBe(true);
+    expect(cmd).toContain('/Users/me/exports/2026-06-16-codex-foo.md');
+    expect(cmd.endsWith('"')).toBe(true);
+  });
+  it('safely quotes a path containing spaces and quotes', () => {
+    const cmd = buildCodexSeedCommand('/Users/me/My "Docs"/a b.md');
+    expect(cmd).toContain('My \\"Docs\\"');
+    // The whole prompt remains a single double-quoted shell argument.
+    expect(cmd.startsWith('codex "')).toBe(true);
+    expect(cmd.endsWith('"')).toBe(true);
   });
 });
 

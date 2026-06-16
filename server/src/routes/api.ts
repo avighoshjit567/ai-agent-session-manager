@@ -9,11 +9,18 @@ import { runFullIndex, getIndexStats, isIndexing } from '../indexer.js';
 import { buildClaudeTimeline, listClaudeSessionFiles } from '../adapters/claude.js';
 import { buildCodexTimeline } from '../adapters/codex.js';
 import { getNote, saveNote } from '../notes.js';
+import { saveMeta } from '../meta.js';
 import { exportSessionMarkdown } from '../export.js';
 import { maskSecrets } from '../privacy.js';
 import fs from 'node:fs';
 import { getSettings, saveSettings } from '../settings.js';
-import { openInEditor, openInTerminal, buildResumeCommand } from '../launch.js';
+import {
+  openInEditor,
+  openInTerminal,
+  buildResumeCommand,
+  buildClaudeForkCommand,
+  buildCodexSeedCommand,
+} from '../launch.js';
 import type { Provider, SessionFilter, AppSettings } from '../../../shared/types.js';
 
 export async function registerApi(app: FastifyInstance): Promise<void> {
@@ -120,6 +127,19 @@ export async function registerApi(app: FastifyInstance): Promise<void> {
     });
   });
 
+  app.put<{
+    Params: { provider: Provider; sessionId: string };
+    Body: { displayName?: string | null; color?: string | null };
+  }>('/api/sessions/:provider/:sessionId/meta', async (req, reply) => {
+    const { provider, sessionId } = req.params;
+    if (!getSession(provider, sessionId)) {
+      reply.code(404);
+      return { error: 'Session not found' };
+    }
+    const body = req.body ?? {};
+    return saveMeta(provider, sessionId, { displayName: body.displayName, color: body.color });
+  });
+
   app.post<{
     Params: { provider: Provider; sessionId: string };
     Body: { includeToolOutputs?: boolean; maskSecrets?: boolean };
@@ -198,6 +218,41 @@ export async function registerApi(app: FastifyInstance): Promise<void> {
       } catch (e: any) {
         reply.code(500);
         return { error: e?.message ?? 'Failed to open terminal' };
+      }
+    },
+  );
+
+  app.post<{ Params: { provider: Provider; sessionId: string } }>(
+    '/api/sessions/:provider/:sessionId/fork',
+    async (req, reply) => {
+      const { provider, sessionId } = req.params;
+      const s = getSession(provider, sessionId);
+      if (!s) {
+        reply.code(404);
+        return { error: 'Session not found' };
+      }
+      if (!s.projectPath || !fs.existsSync(s.projectPath)) {
+        reply.code(400);
+        return { error: 'No project folder recorded for this session — cannot fork it.' };
+      }
+      try {
+        let cmd: string;
+        let message: string;
+        if (provider === 'claude') {
+          // Native fork: new session id, full history, original untouched.
+          cmd = buildClaudeForkCommand(sessionId);
+          message = 'Forking session in a new terminal…';
+        } else {
+          // Codex has no fork — seed a new session with the exported transcript.
+          const { path } = await exportSessionMarkdown(provider, sessionId, {});
+          cmd = buildCodexSeedCommand(path);
+          message = 'Exporting context and starting a new Codex session…';
+        }
+        await openInTerminal(s.projectPath, cmd, getSettings().terminalApp);
+        return { ok: true, message };
+      } catch (e: any) {
+        reply.code(500);
+        return { error: e?.message ?? 'Failed to fork session' };
       }
     },
   );
