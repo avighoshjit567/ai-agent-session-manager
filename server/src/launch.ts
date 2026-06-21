@@ -50,11 +50,19 @@ export function buildTerminalAppleScript(app: TerminalApp, cwd: string, command:
   const shellCmd = `cd '${safeCwd}' && ${command}`;
   const escaped = escapeForAppleScript(shellCmd);
   if (app === 'iTerm') {
+    // Reuse the current window and open a new tab when one is already open;
+    // only spawn a fresh window when iTerm has none. Keeps repeated launches
+    // from piling up windows.
     return [
       'tell application "iTerm"',
       '  activate',
-      '  set newWindow to (create window with default profile)',
-      '  tell current session of newWindow',
+      '  if (count of windows) = 0 then',
+      '    set targetWindow to (create window with default profile)',
+      '  else',
+      '    set targetWindow to current window',
+      '    tell targetWindow to create tab with default profile',
+      '  end if',
+      '  tell current session of targetWindow',
       `    write text "${escaped}"`,
       '  end tell',
       'end tell',

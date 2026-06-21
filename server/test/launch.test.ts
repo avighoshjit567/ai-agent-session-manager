@@ -39,6 +39,12 @@ describe('buildTerminalAppleScript', () => {
     expect(s).toContain('tell application "iTerm"');
     expect(s).toContain('write text');
   });
+  it('reuses the current iTerm window as a new tab, falling back to a new window', () => {
+    const s = buildTerminalAppleScript('iTerm', '/Users/me/proj', 'codex resume x');
+    expect(s).toContain('if (count of windows) = 0 then');
+    expect(s).toContain('create window with default profile');
+    expect(s).toContain('create tab with default profile');
+  });
   it('escapes a double quote in the cwd for the AppleScript string literal', () => {
     const s = buildTerminalAppleScript('Terminal', '/Users/me/a"b', 'claude --resume x');
     expect(s).toContain('\\"');
