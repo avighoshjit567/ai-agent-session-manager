@@ -42,12 +42,20 @@ export function escapeForAppleScript(s: string): string {
   return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
-export function buildTerminalAppleScript(app: TerminalApp, cwd: string, command: string): string {
-  // Shell command run inside the terminal; single-quote the cwd at the shell level
-  // (escaping any embedded single quotes), then escape the whole thing for the
-  // AppleScript string literal.
+// Prefix a command with a `cd` into `cwd` so it always runs in the right project
+// directory. `claude --resume <id>` resolves the session against the *current*
+// directory's project, so launching from the wrong cwd fails with "No
+// conversation found" even though the session exists. Single-quote the path at
+// the shell level, escaping any embedded single quotes.
+export function buildShellCommandWithCd(cwd: string, command: string): string {
   const safeCwd = cwd.replace(/'/g, `'\\''`);
-  const shellCmd = `cd '${safeCwd}' && ${command}`;
+  return `cd '${safeCwd}' && ${command}`;
+}
+
+export function buildTerminalAppleScript(app: TerminalApp, cwd: string, command: string): string {
+  // Shell command run inside the terminal, then escaped for the AppleScript
+  // string literal.
+  const shellCmd = buildShellCommandWithCd(cwd, command);
   const escaped = escapeForAppleScript(shellCmd);
   if (app === 'iTerm') {
     // Reuse the current window and open a new tab when one is already open;
@@ -112,10 +120,14 @@ function openUri(uri: string): Promise<void> {
 // launch-configuration YAML to ~/.warp/launch_configurations/ and open it via
 // the warp://launch URI, which opens a tab in the project directory and runs the
 // resume command automatically.
-async function openInWarp(projectPath: string, command: string): Promise<void> {
+async function openInWarp(projectPath: string, rawCommand: string): Promise<void> {
   const dir = path.join(os.homedir(), '.warp', 'launch_configurations');
   await fs.promises.mkdir(dir, { recursive: true });
   const file = path.join(dir, `${WARP_CONFIG_NAME}.yaml`);
+  // Belt-and-suspenders: set the tab's cwd via the layout AND `cd` inside the
+  // command, since Warp's `layout.cwd` isn't always honored — without the `cd`,
+  // `claude --resume` can launch in the wrong project and fail to find the session.
+  const command = buildShellCommandWithCd(projectPath, rawCommand);
   await fs.promises.writeFile(file, buildWarpLaunchConfig(WARP_CONFIG_NAME, projectPath, command), 'utf8');
   await openUri(`warp://launch/${encodeURIComponent(WARP_CONFIG_NAME)}`);
 }

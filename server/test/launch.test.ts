@@ -5,6 +5,7 @@ import {
   buildTerminalAppleScript,
   buildWarpLaunchConfig,
   buildClaudeForkCommand,
+  buildShellCommandWithCd,
   shellDoubleQuote,
   buildCodexSeedCommand,
 } from '../src/launch';
@@ -48,6 +49,19 @@ describe('buildTerminalAppleScript', () => {
   it('escapes a double quote in the cwd for the AppleScript string literal', () => {
     const s = buildTerminalAppleScript('Terminal', '/Users/me/a"b', 'claude --resume x');
     expect(s).toContain('\\"');
+  });
+});
+
+describe('buildShellCommandWithCd', () => {
+  it('prefixes a cd into the single-quoted cwd', () => {
+    expect(buildShellCommandWithCd('/Users/me/proj', 'claude --resume x')).toBe(
+      "cd '/Users/me/proj' && claude --resume x",
+    );
+  });
+  it('escapes single quotes in the cwd', () => {
+    expect(buildShellCommandWithCd("/Users/me/a'b", 'claude --resume x')).toBe(
+      "cd '/Users/me/a'\\''b' && claude --resume x",
+    );
   });
 });
 
