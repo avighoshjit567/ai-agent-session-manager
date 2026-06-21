@@ -93,6 +93,7 @@ can't fully script because it needs elevated permissions):
 
 ```bash
 # macOS / Linux
+sudo env PATH=$PATH:/home/avijit/.nvm/versions/node/v22.16.0/bin /home/avijit/.nvm/versions/node/v22.16.0/lib/node_modules/pm2/bin/pm2 startup systemd -u avijit --hp /home/avijit #adjust your path
 npx pm2 startup            # prints a `sudo …` command — run that once
 npx pm2 save              # remember the current process list
 
