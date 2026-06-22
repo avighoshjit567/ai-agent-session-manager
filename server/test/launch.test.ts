@@ -6,6 +6,8 @@ import {
   buildWarpLaunchConfig,
   buildClaudeForkCommand,
   buildShellCommandWithCd,
+  buildLinuxTerminalCandidates,
+  buildWindowsTerminalCandidates,
   shellDoubleQuote,
   buildCodexSeedCommand,
 } from '../src/launch';
@@ -62,6 +64,33 @@ describe('buildShellCommandWithCd', () => {
     expect(buildShellCommandWithCd("/Users/me/a'b", 'claude --resume x')).toBe(
       "cd '/Users/me/a'\\''b' && claude --resume x",
     );
+  });
+});
+
+describe('buildLinuxTerminalCandidates', () => {
+  const specs = buildLinuxTerminalCandidates('/Users/me/proj', 'claude --resume x');
+  it('tries x-terminal-emulator first and xterm last', () => {
+    expect(specs[0].cmd).toBe('x-terminal-emulator');
+    expect(specs[specs.length - 1].cmd).toBe('xterm');
+  });
+  it('cd s into the project dir and keeps the shell open in every candidate', () => {
+    for (const s of specs) {
+      const inner = s.args[s.args.length - 1];
+      expect(inner).toContain("cd '/Users/me/proj' && claude --resume x");
+      expect(inner).toContain('exec bash');
+    }
+  });
+});
+
+describe('buildWindowsTerminalCandidates', () => {
+  const specs = buildWindowsTerminalCandidates('C:\\Users\\me\\proj', 'claude --resume x');
+  it('tries Windows Terminal first, cmd.exe as fallback', () => {
+    expect(specs[0].cmd).toBe('wt.exe');
+    expect(specs[1].cmd).toBe('cmd.exe');
+  });
+  it('cd s into the project dir with a drive-aware cd in the cmd fallback', () => {
+    const inner = specs[1].args[specs[1].args.length - 1];
+    expect(inner).toContain('cd /d "C:\\Users\\me\\proj" && claude --resume x');
   });
 });
 

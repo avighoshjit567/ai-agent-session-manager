@@ -143,23 +143,100 @@ export function openInEditor(projectPath: string, editorCommand: string): Promis
   });
 }
 
+export interface SpawnSpec {
+  cmd: string;
+  args: string[];
+}
+
+// Ordered list of Linux terminal emulators to try. Each opens a window, cd's
+// into the project dir, runs the command, then drops to an interactive shell so
+// the window stays open. Args are passed as an array, so no shell quoting is
+// needed at this level — the kernel receives them verbatim.
+export function buildLinuxTerminalCandidates(cwd: string, command: string): SpawnSpec[] {
+  const inner = `${buildShellCommandWithCd(cwd, command)}; exec bash`;
+  return [
+    // Debian/Ubuntu alternatives symlink — whatever the user's default is.
+    { cmd: 'x-terminal-emulator', args: ['-e', 'bash', '-c', inner] },
+    { cmd: 'gnome-terminal', args: ['--', 'bash', '-c', inner] },
+    { cmd: 'konsole', args: ['-e', 'bash', '-c', inner] },
+    { cmd: 'xfce4-terminal', args: ['-x', 'bash', '-c', inner] },
+    { cmd: 'alacritty', args: ['-e', 'bash', '-c', inner] },
+    { cmd: 'kitty', args: ['bash', '-c', inner] },
+    { cmd: 'xterm', args: ['-e', 'bash', '-c', inner] },
+  ];
+}
+
+// Ordered list of Windows terminals to try: Windows Terminal first (opens a tab
+// in the project dir), falling back to a classic console window via `start`.
+// `cd /d` handles a drive-letter change; `cmd /k` keeps the window open.
+export function buildWindowsTerminalCandidates(cwd: string, command: string): SpawnSpec[] {
+  const inner = `cd /d "${cwd}" && ${command}`;
+  return [
+    { cmd: 'wt.exe', args: ['-d', cwd, 'cmd', '/k', command] },
+    { cmd: 'cmd.exe', args: ['/c', 'start', '', 'cmd', '/k', inner] },
+  ];
+}
+
+// Try each spawn spec in order; resolve as soon as one launches. If a candidate
+// isn't installed (ENOENT) move to the next; reject only when none are present.
+function spawnFirstAvailable(specs: SpawnSpec[], notFoundMessage: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const tryAt = (i: number): void => {
+      if (i >= specs.length) {
+        reject(new Error(notFoundMessage));
+        return;
+      }
+      const { cmd, args } = specs[i];
+      const child = spawn(cmd, args, { detached: true, stdio: 'ignore' });
+      let settled = false;
+      child.on('error', (err: NodeJS.ErrnoException) => {
+        if (settled) return;
+        settled = true;
+        if (err.code === 'ENOENT') {
+          tryAt(i + 1); // not installed — try the next candidate
+        } else {
+          reject(err);
+        }
+      });
+      child.on('spawn', () => {
+        if (settled) return;
+        settled = true;
+        child.unref();
+        resolve();
+      });
+    };
+    tryAt(0);
+  });
+}
+
 export function openInTerminal(
   projectPath: string,
   command: string,
   terminalApp: TerminalApp,
 ): Promise<void> {
-  if (process.platform !== 'darwin') {
-    return Promise.reject(new Error('Open in terminal is only supported on macOS.'));
+  if (process.platform === 'darwin') {
+    if (terminalApp === 'Warp') {
+      return openInWarp(projectPath, command);
+    }
+    const script = buildTerminalAppleScript(terminalApp, projectPath, command);
+    return new Promise((resolve, reject) => {
+      const child = spawn('osascript', ['-e', script], { stdio: 'ignore' });
+      child.on('error', reject);
+      child.on('exit', (code) =>
+        code === 0 ? resolve() : reject(new Error(`osascript exited with code ${code}`)),
+      );
+    });
   }
-  if (terminalApp === 'Warp') {
-    return openInWarp(projectPath, command);
-  }
-  const script = buildTerminalAppleScript(terminalApp, projectPath, command);
-  return new Promise((resolve, reject) => {
-    const child = spawn('osascript', ['-e', script], { stdio: 'ignore' });
-    child.on('error', reject);
-    child.on('exit', (code) =>
-      code === 0 ? resolve() : reject(new Error(`osascript exited with code ${code}`)),
+  // Windows / Linux: the macOS-only `terminalApp` preference doesn't apply, so
+  // auto-detect an installed terminal instead.
+  if (process.platform === 'win32') {
+    return spawnFirstAvailable(
+      buildWindowsTerminalCandidates(projectPath, command),
+      'Could not open a terminal: neither Windows Terminal (wt) nor cmd.exe was found.',
     );
-  });
+  }
+  return spawnFirstAvailable(
+    buildLinuxTerminalCandidates(projectPath, command),
+    'Could not find a terminal emulator. Install one of: gnome-terminal, konsole, xfce4-terminal, alacritty, kitty, or xterm.',
+  );
 }

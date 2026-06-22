@@ -76,6 +76,10 @@ onMounted(() => {
             <option value="iTerm">iTerm</option>
             <option value="Warp">Warp</option>
           </select>
+          <span class="mt-1 block text-xs text-zinc-400">
+            macOS only. On Windows and Linux the app auto-detects an installed
+            terminal (Windows Terminal/cmd, or gnome-terminal/konsole/xterm…).
+          </span>
         </label>
       </div>
       <button
