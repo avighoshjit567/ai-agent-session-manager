@@ -1,4 +1,4 @@
-# Claude & Codex Session Manager
+# AI Agent Session Manager
 
 > A local, read-only browser for your **Claude Code** and **OpenAI Codex CLI** sessions. Find that thing you asked the AI three weeks ago, check how much context you've burned, and copy the exact command to resume any session in your terminal.
 
