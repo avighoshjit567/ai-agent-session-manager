@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import { getDb } from './db.js';
 import { maskSecrets } from './privacy.js';
+import { runClaudeHeadless } from './claudeCli.js';
 import type {
   Provider,
   DailyRecap,
@@ -233,4 +234,30 @@ export function previewForDate(
     messageCount: s.messageCount,
     toolCallCount: s.toolCallCount,
   }));
+}
+
+// --- Orchestration ----------------------------------------------------------
+
+export class NoSessionsError extends Error {
+  constructor(date: string) {
+    super(`No sessions on ${date}`);
+    this.name = 'NoSessionsError';
+  }
+}
+
+type RecapRunner = (prompt: string) => Promise<string>;
+
+// `run` is injectable so the orchestration is unit-testable without spawning the
+// CLI; production callers use the default `runClaudeHeadless`.
+export async function generateRecap(
+  date: string,
+  run: RecapRunner = runClaudeHeadless,
+  db: Database.Database = getDb(),
+): Promise<DailyRecap> {
+  const sessions = selectSessionsForDate(date, db);
+  if (sessions.length === 0) throw new NoSessionsError(date);
+  const prompt = buildRecapPrompt(date, sessions);
+  const content = await run(prompt);
+  const sessionIds = sessions.map((s) => `${s.provider}:${s.sessionId}`);
+  return saveGeneratedRecap(date, content.trim(), sessionIds, null, db);
 }

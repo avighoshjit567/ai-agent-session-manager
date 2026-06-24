@@ -12,6 +12,8 @@ import {
   saveEditedRecap,
   listRecaps,
   previewForDate,
+  generateRecap,
+  NoSessionsError,
 } from '../src/recap';
 import type { RecapSession } from '../src/recap';
 
@@ -192,5 +194,33 @@ describe('previewForDate', () => {
     const preview = previewForDate('2026-06-23', db);
     expect(preview).toHaveLength(1);
     expect(preview[0]).toMatchObject({ sessionId: 'p1', name: 'Task A', messageCount: 5 });
+  });
+});
+
+describe('generateRecap', () => {
+  it('builds a prompt, runs the injected runner, and saves the result', async () => {
+    const db = freshDb();
+    insertSession(db, { sessionId: 'g1', title: 'Ship recap', updatedAt: '2026-06-23T09:00:00' });
+    let seenPrompt = '';
+    const fakeRun = async (prompt: string) => {
+      seenPrompt = prompt;
+      return '- Shipped the recap feature';
+    };
+    const recap = await generateRecap('2026-06-23', fakeRun, db);
+    expect(seenPrompt).toContain('### Ship recap');
+    expect(recap.content).toBe('- Shipped the recap feature');
+    expect(recap.sessionIds).toEqual(['claude:g1']);
+    expect(getRecap('2026-06-23', db)?.content).toBe('- Shipped the recap feature');
+  });
+
+  it('throws NoSessionsError when the day is empty (no runner call)', async () => {
+    const db = freshDb();
+    let called = false;
+    const fakeRun = async () => {
+      called = true;
+      return 'x';
+    };
+    await expect(generateRecap('2026-06-23', fakeRun, db)).rejects.toBeInstanceOf(NoSessionsError);
+    expect(called).toBe(false);
   });
 });
