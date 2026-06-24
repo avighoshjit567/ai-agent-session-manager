@@ -9,6 +9,9 @@ import type {
   AppSettings,
   SessionMeta,
   SessionColor,
+  DailyRecap,
+  RecapDay,
+  RecapHistoryItem,
 } from '@shared/types';
 
 const BASE = '';
@@ -122,4 +125,17 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify(meta),
     }),
+
+  getRecapDay: (date: string) => http<RecapDay>(`/api/recap/${date}`),
+
+  generateRecap: (date: string) =>
+    http<{ recap: DailyRecap }>(`/api/recap/${date}/generate`, { method: 'POST' }),
+
+  saveRecap: (date: string, content: string) =>
+    http<{ recap: DailyRecap }>(`/api/recap/${date}`, {
+      method: 'PUT',
+      body: JSON.stringify({ content }),
+    }),
+
+  listRecaps: () => http<{ items: RecapHistoryItem[] }>(`/api/recaps`),
 };
