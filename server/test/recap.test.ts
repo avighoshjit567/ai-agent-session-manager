@@ -132,6 +132,10 @@ describe('buildSessionDigest', () => {
     );
     expect(d).not.toContain('SECRETVALUE12345');
   });
+  it('includes a Notes line when the session has a note summary', () => {
+    const d = buildSessionDigest(sampleSession({ noteSummary: 'Refactored the auth module' }));
+    expect(d).toContain('- Notes: Refactored the auth module');
+  });
 });
 
 describe('buildRecapPrompt', () => {
