@@ -133,6 +133,15 @@ export function initSchema(d: Database.Database): void {
       updated_at TEXT NOT NULL,
       PRIMARY KEY (provider, session_id)
     );
+
+    CREATE TABLE IF NOT EXISTS daily_recaps (
+      date         TEXT PRIMARY KEY,
+      content      TEXT NOT NULL,
+      session_ids  TEXT NOT NULL DEFAULT '[]',
+      model        TEXT,
+      generated_at TEXT NOT NULL,
+      edited_at    TEXT
+    );
   `);
 }
 

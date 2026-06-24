@@ -28,3 +28,14 @@ describe('FTS body migration', () => {
     expect(ftsReindexRequired()).toBe(false);
   });
 });
+
+describe('daily_recaps table', () => {
+  it('is created by initSchema', () => {
+    const db = new Database(':memory:');
+    initSchema(db);
+    const t = db
+      .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='daily_recaps'`)
+      .get();
+    expect(t).toBeTruthy();
+  });
+});
