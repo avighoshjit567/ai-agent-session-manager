@@ -98,3 +98,53 @@ export function selectSessionsForDate(
     .filter((s) => s.activityMs >= startMs && s.activityMs < endMs)
     .sort((a, b) => a.activityMs - b.activityMs);
 }
+
+// --- Prompt building --------------------------------------------------------
+
+function sessionName(s: RecapSession): string {
+  return (
+    s.displayName ||
+    s.title ||
+    (s.firstUserMessage ?? '').slice(0, 60) ||
+    s.sessionId.slice(0, 8)
+  );
+}
+
+function projectName(s: RecapSession): string {
+  if (!s.projectPath) return 'no project';
+  const parts = s.projectPath.split('/').filter(Boolean);
+  return parts[parts.length - 1] ?? s.projectPath;
+}
+
+export function buildSessionDigest(s: RecapSession): string {
+  const branch = s.gitBranch ? ` (${s.gitBranch})` : '';
+  const lines: string[] = [`### ${sessionName(s)} — ${projectName(s)}${branch}`];
+
+  const intent = maskSecrets((s.firstUserMessage ?? '').replace(/\s+/g, ' ').trim()).slice(0, 280);
+  if (intent) lines.push(`- Intent: ${intent}`);
+
+  const extras: string[] = [];
+  if (s.hasSubagents) extras.push('subagents');
+  if (s.hasTodos) extras.push('todos');
+  const extraStr = extras.length ? `, ${extras.join(', ')}` : '';
+  lines.push(`- Activity: ${s.messageCount} messages, ${s.toolCallCount} tool calls${extraStr}`);
+
+  const note = maskSecrets(s.noteSummary.replace(/\s+/g, ' ').trim());
+  if (note) lines.push(`- Notes: ${note}`);
+
+  return lines.join('\n');
+}
+
+export function buildRecapPrompt(date: string, sessions: RecapSession[]): string {
+  const digests = sessions.map(buildSessionDigest).join('\n\n');
+  return [
+    `Write my daily accomplishments recap for a standup, covering work done on ${date}.`,
+    `Below are the AI coding sessions I worked on that day. Produce markdown bullet points`,
+    `grouped by project. Each bullet is one concrete accomplishment in past tense, first`,
+    `person, specific and plain. Merge related sessions; omit trivial or empty ones. Do not`,
+    `invent work not evidenced below. Output only the recap — no preamble.`,
+    ``,
+    `Sessions:`,
+    digests,
+  ].join('\n');
+}

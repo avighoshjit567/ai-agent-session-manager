@@ -5,6 +5,8 @@ import {
   isValidDateString,
   localDayWindow,
   selectSessionsForDate,
+  buildSessionDigest,
+  buildRecapPrompt,
 } from '../src/recap';
 import type { RecapSession } from '../src/recap';
 
@@ -40,6 +42,26 @@ function insertSession(db: Database.Database, o: Record<string, unknown>): void 
     indexedAt: '2026-06-24T00:00:00Z',
     ...o,
   });
+}
+
+function sampleSession(over: Partial<RecapSession> = {}): RecapSession {
+  return {
+    provider: 'claude',
+    sessionId: 'abc123',
+    title: 'Fix login bug',
+    displayName: null,
+    projectPath: '/Users/me/webapp',
+    gitBranch: 'fix/login',
+    model: 'claude-opus',
+    firstUserMessage: 'The login form throws a 500 on submit',
+    messageCount: 42,
+    toolCallCount: 7,
+    hasSubagents: true,
+    hasTodos: false,
+    noteSummary: '',
+    activityMs: 0,
+    ...over,
+  };
 }
 
 describe('isValidDateString', () => {
@@ -86,5 +108,34 @@ describe('selectSessionsForDate', () => {
     const db = freshDb();
     insertSession(db, { sessionId: 'arch', updatedAt: '2026-06-23T12:00:00', archived: 1 });
     expect(selectSessionsForDate('2026-06-23', db)).toHaveLength(0);
+  });
+});
+
+describe('buildSessionDigest', () => {
+  it('renders name, project, intent, and activity; omits empty notes', () => {
+    const d = buildSessionDigest(sampleSession());
+    expect(d).toContain('### Fix login bug — webapp (fix/login)');
+    expect(d).toContain('- Intent: The login form throws a 500 on submit');
+    expect(d).toContain('- Activity: 42 messages, 7 tool calls, subagents');
+    expect(d).not.toContain('- Notes:');
+  });
+  it('masks secrets in free text', () => {
+    const d = buildSessionDigest(
+      sampleSession({ firstUserMessage: 'token sk-ant-api03-SECRETVALUE12345 here' }),
+    );
+    expect(d).not.toContain('SECRETVALUE12345');
+  });
+});
+
+describe('buildRecapPrompt', () => {
+  it('includes the date and every session digest', () => {
+    const prompt = buildRecapPrompt('2026-06-23', [
+      sampleSession({ title: 'Task A' }),
+      sampleSession({ title: 'Task B' }),
+    ]);
+    expect(prompt).toContain('2026-06-23');
+    expect(prompt).toContain('### Task A');
+    expect(prompt).toContain('### Task B');
+    expect(prompt).toContain('Output only the recap');
   });
 });
