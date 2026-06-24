@@ -130,3 +130,34 @@ export interface AppSettings {
   editorCommand: string;
   terminalApp: TerminalApp;
 }
+
+export interface DailyRecap {
+  date: string; // 'YYYY-MM-DD' (server local day being recapped)
+  content: string; // markdown recap (generated, then user-editable)
+  sessionIds: string[]; // "provider:sessionId" included at generation time
+  model: string | null;
+  generatedAt: string;
+  editedAt: string | null;
+}
+
+export interface RecapSessionPreview {
+  provider: Provider;
+  sessionId: string;
+  name: string;
+  projectPath: string | null;
+  gitBranch: string | null;
+  messageCount: number;
+  toolCallCount: number;
+}
+
+export interface RecapDay {
+  date: string;
+  recap: DailyRecap | null;
+  sessions: RecapSessionPreview[];
+}
+
+export interface RecapHistoryItem {
+  date: string;
+  generatedAt: string;
+  editedAt: string | null;
+}
