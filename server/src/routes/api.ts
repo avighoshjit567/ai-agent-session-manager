@@ -21,6 +21,15 @@ import {
   buildClaudeForkCommand,
   buildCodexSeedCommand,
 } from '../launch.js';
+import {
+  getRecap,
+  previewForDate,
+  generateRecap,
+  saveEditedRecap,
+  listRecaps,
+  isValidDateString,
+  NoSessionsError,
+} from '../recap.js';
 import type { Provider, SessionFilter, AppSettings } from '../../../shared/types.js';
 
 export async function registerApi(app: FastifyInstance): Promise<void> {
@@ -256,4 +265,52 @@ export async function registerApi(app: FastifyInstance): Promise<void> {
       }
     },
   );
+
+  app.get<{ Params: { date: string } }>('/api/recap/:date', async (req, reply) => {
+    const { date } = req.params;
+    if (!isValidDateString(date)) {
+      reply.code(400);
+      return { error: 'Invalid date (expected YYYY-MM-DD)' };
+    }
+    return { date, recap: getRecap(date), sessions: previewForDate(date) };
+  });
+
+  app.post<{ Params: { date: string } }>('/api/recap/:date/generate', async (req, reply) => {
+    const { date } = req.params;
+    if (!isValidDateString(date)) {
+      reply.code(400);
+      return { error: 'Invalid date (expected YYYY-MM-DD)' };
+    }
+    try {
+      const recap = await generateRecap(date);
+      return { recap };
+    } catch (e: any) {
+      if (e instanceof NoSessionsError) {
+        reply.code(409);
+        return { error: e.message };
+      }
+      reply.code(500);
+      return { error: e?.message ?? 'Failed to generate recap' };
+    }
+  });
+
+  app.put<{ Params: { date: string }; Body: { content?: string } }>(
+    '/api/recap/:date',
+    async (req, reply) => {
+      const { date } = req.params;
+      if (!isValidDateString(date)) {
+        reply.code(400);
+        return { error: 'Invalid date (expected YYYY-MM-DD)' };
+      }
+      const content = typeof req.body?.content === 'string' ? req.body.content : '';
+      const recap = saveEditedRecap(date, content);
+      if (!recap) {
+        reply.code(404);
+        return { error: 'No recap for that date yet' };
+      }
+      return { recap };
+    },
+  );
+
+  app.get('/api/recaps', async () => ({ items: listRecaps() }));
 }
