@@ -49,7 +49,7 @@ export interface RecapSession {
   activityMs: number;
 }
 
-function activityMs(updatedAt: string | null, mtime: number | null): number {
+function deriveActivityMs(updatedAt: string | null, mtime: number | null): number {
   if (updatedAt) {
     const t = Date.parse(updatedAt);
     if (!Number.isNaN(t)) return t;
@@ -94,7 +94,7 @@ export function selectSessionsForDate(
       hasSubagents: !!r.hasSubagents,
       hasTodos: !!r.hasTodos,
       noteSummary: r.noteSummary ?? '',
-      activityMs: activityMs(r.updatedAt ?? null, r.mtime ?? null),
+      activityMs: deriveActivityMs(r.updatedAt ?? null, r.mtime ?? null),
     }))
     .filter((s) => s.activityMs >= startMs && s.activityMs < endMs)
     .sort((a, b) => a.activityMs - b.activityMs);

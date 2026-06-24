@@ -12,6 +12,12 @@ export function runClaudeHeadless(prompt: string, opts: RunClaudeOptions = {}): 
   const timeoutMs = opts.timeoutMs ?? 90_000;
   return new Promise((resolve, reject) => {
     const child = spawn('claude', ['-p'], { cwd: opts.cwd, stdio: ['pipe', 'pipe', 'pipe'] });
+
+    // If the child dies before stdin drains, Node emits 'error' on the stdin
+    // stream itself; swallow it — the child 'error'/'close'/timeout handlers
+    // below already settle the promise.
+    child.stdin.on('error', () => {});
+
     let out = '';
     let err = '';
     let timedOut = false;

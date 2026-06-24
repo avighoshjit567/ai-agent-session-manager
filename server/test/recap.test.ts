@@ -183,6 +183,17 @@ describe('recap persistence', () => {
     saveGeneratedRecap('2026-06-23', 'b', [], null, db);
     expect(listRecaps(db).map((r) => r.date)).toEqual(['2026-06-23', '2026-06-21']);
   });
+
+  it('re-generating overwrites content and resets edited_at', () => {
+    const db = freshDb();
+    saveGeneratedRecap('2026-06-23', 'first', ['claude:a'], null, db);
+    saveEditedRecap('2026-06-23', 'edited', db);
+    expect(getRecap('2026-06-23', db)?.editedAt).toBeTruthy();
+    const regen = saveGeneratedRecap('2026-06-23', 'second', ['claude:b'], null, db);
+    expect(regen.content).toBe('second');
+    expect(regen.sessionIds).toEqual(['claude:b']);
+    expect(regen.editedAt).toBeNull();
+  });
 });
 
 describe('previewForDate', () => {
@@ -226,5 +237,12 @@ describe('generateRecap', () => {
     };
     await expect(generateRecap('2026-06-23', fakeRun, db)).rejects.toBeInstanceOf(NoSessionsError);
     expect(called).toBe(false);
+  });
+
+  it('trims surrounding whitespace from the runner output before saving', async () => {
+    const db = freshDb();
+    insertSession(db, { sessionId: 't1', title: 'Trim me', updatedAt: '2026-06-23T09:00:00' });
+    const recap = await generateRecap('2026-06-23', async () => '  - did things  \n', db);
+    expect(recap.content).toBe('- did things');
   });
 });
