@@ -7,6 +7,11 @@ import {
   selectSessionsForDate,
   buildSessionDigest,
   buildRecapPrompt,
+  getRecap,
+  saveGeneratedRecap,
+  saveEditedRecap,
+  listRecaps,
+  previewForDate,
 } from '../src/recap';
 import type { RecapSession } from '../src/recap';
 
@@ -137,5 +142,55 @@ describe('buildRecapPrompt', () => {
     expect(prompt).toContain('### Task A');
     expect(prompt).toContain('### Task B');
     expect(prompt).toContain('Output only the recap');
+  });
+});
+
+describe('recap persistence', () => {
+  it('saves a generated recap and reads it back', () => {
+    const db = freshDb();
+    const r = saveGeneratedRecap('2026-06-23', '# Recap', ['claude:abc'], 'claude-opus', db);
+    expect(r.content).toBe('# Recap');
+    expect(r.sessionIds).toEqual(['claude:abc']);
+    expect(r.editedAt).toBeNull();
+    expect(getRecap('2026-06-23', db)?.content).toBe('# Recap');
+  });
+
+  it('returns null for a missing date', () => {
+    expect(getRecap('1999-01-01', freshDb())).toBeNull();
+  });
+
+  it('updates content and stamps edited_at on edit', () => {
+    const db = freshDb();
+    saveGeneratedRecap('2026-06-23', 'orig', [], null, db);
+    const edited = saveEditedRecap('2026-06-23', 'changed', db);
+    expect(edited?.content).toBe('changed');
+    expect(edited?.editedAt).toBeTruthy();
+  });
+
+  it('returns null when editing a non-existent recap', () => {
+    expect(saveEditedRecap('1999-01-01', 'x', freshDb())).toBeNull();
+  });
+
+  it('lists recaps newest first', () => {
+    const db = freshDb();
+    saveGeneratedRecap('2026-06-21', 'a', [], null, db);
+    saveGeneratedRecap('2026-06-23', 'b', [], null, db);
+    expect(listRecaps(db).map((r) => r.date)).toEqual(['2026-06-23', '2026-06-21']);
+  });
+});
+
+describe('previewForDate', () => {
+  it('maps a day\'s sessions to lightweight previews', () => {
+    const db = freshDb();
+    insertSession(db, {
+      sessionId: 'p1',
+      title: 'Task A',
+      updatedAt: '2026-06-23T10:00:00',
+      messageCount: 5,
+      toolCallCount: 2,
+    });
+    const preview = previewForDate('2026-06-23', db);
+    expect(preview).toHaveLength(1);
+    expect(preview[0]).toMatchObject({ sessionId: 'p1', name: 'Task A', messageCount: 5 });
   });
 });

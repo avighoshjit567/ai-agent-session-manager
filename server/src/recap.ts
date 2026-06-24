@@ -148,3 +148,89 @@ export function buildRecapPrompt(date: string, sessions: RecapSession[]): string
     digests,
   ].join('\n');
 }
+
+// --- Persistence ------------------------------------------------------------
+
+function safeParseIds(v: unknown): string[] {
+  if (typeof v !== 'string') return [];
+  try {
+    const parsed = JSON.parse(v);
+    return Array.isArray(parsed) ? (parsed as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function mapRecapRow(r: any): DailyRecap {
+  return {
+    date: r.date,
+    content: r.content,
+    sessionIds: safeParseIds(r.session_ids),
+    model: r.model ?? null,
+    generatedAt: r.generated_at,
+    editedAt: r.edited_at ?? null,
+  };
+}
+
+export function getRecap(date: string, db: Database.Database = getDb()): DailyRecap | null {
+  const r = db.prepare(`SELECT * FROM daily_recaps WHERE date = ?`).get(date);
+  return r ? mapRecapRow(r) : null;
+}
+
+export function saveGeneratedRecap(
+  date: string,
+  content: string,
+  sessionIds: string[],
+  model: string | null,
+  db: Database.Database = getDb(),
+): DailyRecap {
+  const now = new Date().toISOString();
+  db.prepare(
+    `INSERT INTO daily_recaps (date, content, session_ids, model, generated_at, edited_at)
+     VALUES (@date, @content, @sessionIds, @model, @generatedAt, NULL)
+     ON CONFLICT(date) DO UPDATE SET
+       content=excluded.content,
+       session_ids=excluded.session_ids,
+       model=excluded.model,
+       generated_at=excluded.generated_at,
+       edited_at=NULL`,
+  ).run({ date, content, sessionIds: JSON.stringify(sessionIds), model, generatedAt: now });
+  return getRecap(date, db)!;
+}
+
+export function saveEditedRecap(
+  date: string,
+  content: string,
+  db: Database.Database = getDb(),
+): DailyRecap | null {
+  const now = new Date().toISOString();
+  const res = db
+    .prepare(`UPDATE daily_recaps SET content=@content, edited_at=@editedAt WHERE date=@date`)
+    .run({ date, content, editedAt: now });
+  if (res.changes === 0) return null;
+  return getRecap(date, db);
+}
+
+export function listRecaps(db: Database.Database = getDb()): RecapHistoryItem[] {
+  return db
+    .prepare(
+      `SELECT date, generated_at AS generatedAt, edited_at AS editedAt
+       FROM daily_recaps ORDER BY date DESC`,
+    )
+    .all() as RecapHistoryItem[];
+}
+
+export function previewForDate(
+  date: string,
+  db: Database.Database = getDb(),
+): RecapSessionPreview[] {
+  return selectSessionsForDate(date, db).map((s) => ({
+    provider: s.provider,
+    sessionId: s.sessionId,
+    name: sessionName(s),
+    projectPath: s.projectPath,
+    gitBranch: s.gitBranch,
+    messageCount: s.messageCount,
+    toolCallCount: s.toolCallCount,
+  }));
+}
