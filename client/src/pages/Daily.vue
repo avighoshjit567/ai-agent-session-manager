@@ -134,7 +134,6 @@ onMounted(() => {
           <span class="truncate text-zinc-800 dark:text-zinc-200">{{ s.name }}</span>
           <span class="shrink-0 text-[11px] text-zinc-500">
             {{ s.projectPath?.split('/').filter(Boolean).pop() || '—' }}
-            · {{ s.messageCount }}m / {{ s.toolCallCount }}t
           </span>
         </li>
       </ul>

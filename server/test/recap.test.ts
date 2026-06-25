@@ -119,11 +119,14 @@ describe('selectSessionsForDate', () => {
 });
 
 describe('buildSessionDigest', () => {
-  it('renders name, project, intent, and activity; omits empty notes', () => {
+  it('renders name, project, and topic; omits activity stats and empty notes', () => {
     const d = buildSessionDigest(sampleSession());
     expect(d).toContain('### Fix login bug — webapp (fix/login)');
-    expect(d).toContain('- Intent: The login form throws a 500 on submit');
-    expect(d).toContain('- Activity: 42 messages, 7 tool calls, subagents');
+    expect(d).toContain('- About: The login form throws a 500 on submit');
+    // No session metadata should leak into the digest fed to the model.
+    expect(d).not.toContain('tool calls');
+    expect(d).not.toContain('messages');
+    expect(d).not.toContain('subagents');
     expect(d).not.toContain('- Notes:');
   });
   it('masks secrets in free text', () => {

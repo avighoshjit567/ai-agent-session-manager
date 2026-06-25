@@ -122,13 +122,7 @@ export function buildSessionDigest(s: RecapSession): string {
   const lines: string[] = [`### ${sessionName(s)} — ${projectName(s)}${branch}`];
 
   const intent = maskSecrets((s.firstUserMessage ?? '').replace(/\s+/g, ' ').trim()).slice(0, 280);
-  if (intent) lines.push(`- Intent: ${intent}`);
-
-  const extras: string[] = [];
-  if (s.hasSubagents) extras.push('subagents');
-  if (s.hasTodos) extras.push('todos');
-  const extraStr = extras.length ? `, ${extras.join(', ')}` : '';
-  lines.push(`- Activity: ${s.messageCount} messages, ${s.toolCallCount} tool calls${extraStr}`);
+  if (intent) lines.push(`- About: ${intent}`);
 
   const note = maskSecrets(s.noteSummary.replace(/\s+/g, ' ').trim());
   if (note) lines.push(`- Notes: ${note}`);
@@ -140,10 +134,12 @@ export function buildRecapPrompt(date: string, sessions: RecapSession[]): string
   const digests = sessions.map(buildSessionDigest).join('\n\n');
   return [
     `Write my daily accomplishments recap for a standup, covering work done on ${date}.`,
-    `Below are the AI coding sessions I worked on that day. Produce markdown bullet points`,
-    `grouped by project. Each bullet is one concrete accomplishment in past tense, first`,
-    `person, specific and plain. Merge related sessions; omit trivial or empty ones. Do not`,
-    `invent work not evidenced below. Output only the recap — no preamble.`,
+    `Below are the AI coding sessions I worked on that day, each with its topic and what it`,
+    `was about. Produce a clean markdown bullet list grouped by project. Each bullet should`,
+    `clearly name the topic and what I accomplished, in past tense, first person, specific and`,
+    `plain. Do NOT mention any session metadata — no message or tool-call counts, no subagents,`,
+    `todos, models, or statistics — only the actual work and topics. Merge related sessions;`,
+    `omit trivial ones. Do not invent work not evidenced below. Output only the recap — no preamble.`,
     ``,
     `Sessions:`,
     digests,
