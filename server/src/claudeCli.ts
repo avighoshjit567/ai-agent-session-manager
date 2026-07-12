@@ -22,6 +22,16 @@ export function runClaudeHeadless(prompt: string, opts: RunClaudeOptions = {}): 
     let err = '';
     let timedOut = false;
 
+    // 'close' still fires after 'error' (e.g. ENOENT → close with code -2), so
+    // settle exactly once to keep the first, most specific error.
+    let settled = false;
+    const settle = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      fn();
+    };
+
     const timer = setTimeout(() => {
       timedOut = true;
       child.kill('SIGKILL');
@@ -31,30 +41,32 @@ export function runClaudeHeadless(prompt: string, opts: RunClaudeOptions = {}): 
     child.stderr.on('data', (d) => (err += d.toString()));
 
     child.on('error', (e: NodeJS.ErrnoException) => {
-      clearTimeout(timer);
-      if (e.code === 'ENOENT') {
-        reject(new Error('Claude CLI not found — install it to generate recaps.'));
-      } else {
-        reject(e);
-      }
+      settle(() => {
+        if (e.code === 'ENOENT') {
+          reject(new Error('Claude CLI not found — install it to generate recaps.'));
+        } else {
+          reject(e);
+        }
+      });
     });
 
     child.on('close', (code) => {
-      clearTimeout(timer);
-      if (timedOut) {
-        reject(new Error(`Recap generation timed out after ${timeoutMs / 1000}s.`));
-        return;
-      }
-      if (code !== 0) {
-        reject(new Error(err.trim() || `claude exited with code ${code}`));
-        return;
-      }
-      const text = out.trim();
-      if (!text) {
-        reject(new Error('Claude returned an empty recap.'));
-        return;
-      }
-      resolve(text);
+      settle(() => {
+        if (timedOut) {
+          reject(new Error(`Recap generation timed out after ${timeoutMs / 1000}s.`));
+          return;
+        }
+        if (code !== 0) {
+          reject(new Error(err.trim() || `claude exited with code ${code}`));
+          return;
+        }
+        const text = out.trim();
+        if (!text) {
+          reject(new Error('Claude returned an empty recap.'));
+          return;
+        }
+        resolve(text);
+      });
     });
 
     child.stdin.write(prompt);

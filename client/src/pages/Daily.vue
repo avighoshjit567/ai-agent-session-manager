@@ -70,6 +70,8 @@ async function generate() {
 
 async function saveEdits() {
   if (!recap.value || !dirty.value) return;
+  // Never persist an emptied textarea — it would silently wipe the saved recap.
+  if (!content.value.trim()) return;
   try {
     const { recap: r } = await api.saveRecap(date.value, content.value);
     recap.value = r;

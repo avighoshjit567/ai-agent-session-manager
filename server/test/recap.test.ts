@@ -116,6 +116,29 @@ describe('selectSessionsForDate', () => {
     insertSession(db, { sessionId: 'arch', updatedAt: '2026-06-23T12:00:00', archived: 1 });
     expect(selectSessionsForDate('2026-06-23', db)).toHaveLength(0);
   });
+
+  it('handles UTC-suffixed timestamps and excludes far-away days', () => {
+    const db = freshDb();
+    insertSession(db, {
+      sessionId: 'utc-in',
+      updatedAt: new Date(2026, 5, 23, 12, 0, 0).toISOString(),
+    });
+    insertSession(db, { sessionId: 'far-before', updatedAt: '2026-06-01T12:00:00Z' });
+    insertSession(db, { sessionId: 'far-after', updatedAt: '2026-07-10T12:00:00Z' });
+    const ids = selectSessionsForDate('2026-06-23', db).map((s) => s.sessionId);
+    expect(ids).toEqual(['utc-in']);
+  });
+
+  it('falls back to mtime when updated_at is unparseable', () => {
+    const db = freshDb();
+    insertSession(db, {
+      sessionId: 'badstamp',
+      updatedAt: 'not-a-date',
+      mtime: new Date(2026, 5, 23, 9, 0, 0).getTime(),
+    });
+    const ids = selectSessionsForDate('2026-06-23', db).map((s) => s.sessionId);
+    expect(ids).toEqual(['badstamp']);
+  });
 });
 
 describe('buildSessionDigest', () => {

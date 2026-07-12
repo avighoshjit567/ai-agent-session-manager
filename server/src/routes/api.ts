@@ -303,6 +303,10 @@ export async function registerApi(app: FastifyInstance): Promise<void> {
         return { error: 'Invalid date (expected YYYY-MM-DD)' };
       }
       const content = typeof req.body?.content === 'string' ? req.body.content : '';
+      if (!content.trim()) {
+        reply.code(400);
+        return { error: 'Recap content cannot be empty' };
+      }
       const recap = saveEditedRecap(date, content);
       if (!recap) {
         reply.code(404);

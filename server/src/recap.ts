@@ -62,6 +62,12 @@ export function selectSessionsForDate(
   db: Database.Database = getDb(),
 ): RecapSession[] {
   const { startMs, endMs } = localDayWindow(date);
+  // SQL prefilter so we don't scan the whole table on every recap request. It
+  // must be a superset of the exact JS filter below: strftime reads
+  // timezone-less timestamps as UTC while Date.parse reads them as local, so
+  // the updated_at window is widened by a day on each side (covers every UTC
+  // offset); unparseable updated_at values pass through for JS to resolve.
+  const slackMs = 24 * 60 * 60 * 1000;
   const rows = db
     .prepare(
       `SELECT s.provider, s.session_id AS sessionId, s.title,
@@ -75,9 +81,18 @@ export function selectSessionsForDate(
        FROM sessions s
        LEFT JOIN session_meta m ON m.provider = s.provider AND m.session_id = s.session_id
        LEFT JOIN notes n ON n.provider = s.provider AND n.session_id = s.session_id
-       WHERE s.archived = 0`,
+       WHERE s.archived = 0
+         AND (
+           (s.updated_at IS NOT NULL AND (
+             strftime('%s', s.updated_at) IS NULL
+             OR (CAST(strftime('%s', s.updated_at) AS INTEGER) * 1000 >= @preStartMs
+                 AND CAST(strftime('%s', s.updated_at) AS INTEGER) * 1000 < @preEndMs)
+           ))
+           OR (s.updated_at IS NULL
+               AND COALESCE(s.mtime, 0) >= @startMs AND COALESCE(s.mtime, 0) < @endMs)
+         )`,
     )
-    .all() as any[];
+    .all({ preStartMs: startMs - slackMs, preEndMs: endMs + slackMs, startMs, endMs }) as any[];
 
   return rows
     .map((r) => ({
