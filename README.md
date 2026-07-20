@@ -49,8 +49,9 @@ cd ai-agent-session-manager
 # 2. (Recommended) match Node version
 nvm use   # reads .nvmrc → Node 22
 
-# 3. Install dependencies (compiles the better-sqlite3 native binary)
-npm install
+# 3. Run setup (checks Node version, npm install, verifies better-sqlite3,
+#    reports whether ~/.claude and/or ~/.codex were found)
+npm run setup
 
 # 4. Run in dev mode (server + Vite client with hot reload)
 npm run dev
@@ -58,6 +59,8 @@ npm run dev
 ```
 
 On first launch the indexer scans your `~/.claude/projects/**/*.jsonl` and `~/.codex/sessions/**/*.jsonl` files — should complete in well under a second even for hundreds of sessions.
+
+`npm run setup` is a one-shot script (`scripts/setup.mjs`) — plain `npm install` still works if you'd rather skip the extra checks.
 
 ### Production single-process build
 
