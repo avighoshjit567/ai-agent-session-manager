@@ -49,12 +49,14 @@ export const PATHS = {
   codexArchived: path.join(home, '.codex', 'archived_sessions'),
   appData: appDataDir,
   notesDir: path.join(appDataDir, 'notes'),
+  taskImagesDir: path.join(appDataDir, 'task-images'),
   exportsDir: path.join(resolveDocumentsDir(), 'ai-session-exports'),
 };
 
 export function ensureAppDirs(): void {
   fs.mkdirSync(PATHS.appData, { recursive: true });
   fs.mkdirSync(PATHS.notesDir, { recursive: true });
+  fs.mkdirSync(PATHS.taskImagesDir, { recursive: true });
 }
 
 export function indexDbPath(): string {

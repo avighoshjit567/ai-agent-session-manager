@@ -164,6 +164,19 @@ export function initSchema(d: Database.Database): void {
 
     CREATE INDEX IF NOT EXISTS idx_task_sessions_session ON task_sessions(provider, session_id);
 
+    -- Image attachments for tasks. Files live in the app data folder
+    -- (task-images/); rows only carry metadata.
+    CREATE TABLE IF NOT EXISTS task_images (
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id       INTEGER NOT NULL,
+      filename      TEXT NOT NULL UNIQUE,
+      original_name TEXT,
+      size          INTEGER NOT NULL,
+      created_at    TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_task_images_task ON task_images(task_id);
+
     CREATE TABLE IF NOT EXISTS daily_recaps (
       date         TEXT PRIMARY KEY,
       content      TEXT NOT NULL,

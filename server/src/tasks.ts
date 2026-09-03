@@ -1,11 +1,14 @@
 import type Database from 'better-sqlite3';
 import { getDb } from './db.js';
+import { PATHS } from './paths.js';
+import { imagesByTask, deleteImagesForTask } from './taskImages.js';
 import {
   TASK_COLUMNS,
   TASK_PRIORITIES,
   type Provider,
   type Task,
   type TaskColumn,
+  type TaskImage,
   type TaskPriority,
   type TaskSessionRef,
 } from '../../shared/types.js';
@@ -58,7 +61,7 @@ const SESSION_NAME_SELECT = `
   LEFT JOIN session_meta sm ON sm.provider = ts.provider AND sm.session_id = ts.session_id
   LEFT JOIN sessions s ON s.provider = ts.provider AND s.session_id = ts.session_id`;
 
-function rowToTask(row: any, sessions: TaskSessionRef[]): Task {
+function rowToTask(row: any, sessions: TaskSessionRef[], images: TaskImage[]): Task {
   return {
     id: row.id,
     title: row.title,
@@ -72,6 +75,7 @@ function rowToTask(row: any, sessions: TaskSessionRef[]): Task {
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     sessions,
+    images,
   };
 }
 
@@ -109,7 +113,11 @@ function sessionsByTask(db: Database.Database, taskIds: number[]): Map<number, T
 export function getTask(id: number, db: Database.Database = getDb()): Task | null {
   const row = db.prepare(`${TASK_SELECT} WHERE id = ?`).get(id) as any;
   if (!row) return null;
-  return rowToTask(row, sessionsByTask(db, [row.id]).get(row.id) ?? []);
+  return rowToTask(
+    row,
+    sessionsByTask(db, [row.id]).get(row.id) ?? [],
+    imagesByTask(db, [row.id]).get(row.id) ?? [],
+  );
 }
 
 export function listTasks(
@@ -122,7 +130,8 @@ export function listTasks(
       : db.prepare(`${TASK_SELECT} ORDER BY board_column, position`).all()
   ) as any[];
   const links = sessionsByTask(db, rows.map((r) => r.id));
-  return rows.map((r) => rowToTask(r, links.get(r.id) ?? []));
+  const images = imagesByTask(db, rows.map((r) => r.id));
+  return rows.map((r) => rowToTask(r, links.get(r.id) ?? [], images.get(r.id) ?? []));
 }
 
 export function createTask(input: CreateTaskInput, db: Database.Database = getDb()): Task {
@@ -201,10 +210,15 @@ export function moveTask(
   return getTask(id, db);
 }
 
-export function deleteTask(id: number, db: Database.Database = getDb()): boolean {
+export function deleteTask(
+  id: number,
+  db: Database.Database = getDb(),
+  imagesDir: string = PATHS.taskImagesDir,
+): boolean {
   // Manual cascade: better-sqlite3 leaves foreign_keys OFF by default.
   const run = db.transaction((taskId: number) => {
     db.prepare(`DELETE FROM task_sessions WHERE task_id = ?`).run(taskId);
+    deleteImagesForTask(taskId, db, imagesDir);
     return db.prepare(`DELETE FROM tasks WHERE id = ?`).run(taskId).changes > 0;
   });
   return run(id);
@@ -246,5 +260,6 @@ export function tasksForSession(
     )
     .all(provider, sessionId) as any[];
   const links = sessionsByTask(db, rows.map((r) => r.id));
-  return rows.map((r) => rowToTask(r, links.get(r.id) ?? []));
+  const images = imagesByTask(db, rows.map((r) => r.id));
+  return rows.map((r) => rowToTask(r, links.get(r.id) ?? [], images.get(r.id) ?? []));
 }

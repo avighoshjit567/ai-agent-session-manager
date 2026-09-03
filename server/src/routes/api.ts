@@ -41,6 +41,13 @@ import {
   type CreateTaskInput,
   type UpdateTaskInput,
 } from '../tasks.js';
+import {
+  addTaskImage,
+  deleteTaskImage,
+  imageFilePath,
+  isSafeImageFilename,
+  MIME_BY_EXT,
+} from '../taskImages.js';
 import type {
   Provider,
   SessionFilter,
@@ -416,4 +423,56 @@ export async function registerApi(app: FastifyInstance): Promise<void> {
     '/api/sessions/:provider/:sessionId/tasks',
     async (req) => ({ items: tasksForSession(req.params.provider, req.params.sessionId) }),
   );
+
+  // Image uploads arrive as base64 data URLs (10MB image cap; the raised body
+  // limit covers the ~33% base64 overhead plus JSON wrapping).
+  app.post<{ Params: { id: string }; Body: { dataUrl?: string; name?: string } }>(
+    '/api/tasks/:id/images',
+    { bodyLimit: 16 * 1024 * 1024 },
+    async (req, reply) => {
+      try {
+        const img = addTaskImage(
+          Number(req.params.id),
+          req.body?.dataUrl ?? '',
+          req.body?.name ?? null,
+        );
+        if (!img) {
+          reply.code(404);
+          return { error: 'Task not found' };
+        }
+        return img;
+      } catch (e: any) {
+        reply.code(400);
+        return { error: e?.message ?? 'Invalid image' };
+      }
+    },
+  );
+
+  app.delete<{ Params: { id: string; imageId: string } }>(
+    '/api/tasks/:id/images/:imageId',
+    async (req, reply) => {
+      if (!deleteTaskImage(Number(req.params.imageId))) {
+        reply.code(404);
+        return { error: 'Image not found' };
+      }
+      return { ok: true };
+    },
+  );
+
+  app.get<{ Params: { filename: string } }>('/api/task-images/:filename', async (req, reply) => {
+    const { filename } = req.params;
+    if (!isSafeImageFilename(filename)) {
+      reply.code(400);
+      return { error: 'Invalid filename' };
+    }
+    const file = imageFilePath(filename);
+    if (!fs.existsSync(file)) {
+      reply.code(404);
+      return { error: 'Not found' };
+    }
+    const ext = filename.split('.').pop()!;
+    reply.header('content-type', MIME_BY_EXT[ext] ?? 'application/octet-stream');
+    reply.header('cache-control', 'private, max-age=31536000, immutable');
+    return fs.createReadStream(file);
+  });
 }

@@ -181,6 +181,16 @@ export interface TaskSessionRef {
   name?: string | null;
 }
 
+export interface TaskImage {
+  id: number;
+  taskId: number;
+  url: string; // served by the app: /api/task-images/<filename>
+  filename: string;
+  originalName: string | null;
+  size: number;
+  createdAt: string;
+}
+
 export interface Task {
   id: number;
   title: string;
@@ -194,4 +204,5 @@ export interface Task {
   createdAt: string;
   updatedAt: string;
   sessions: TaskSessionRef[];
+  images: TaskImage[];
 }

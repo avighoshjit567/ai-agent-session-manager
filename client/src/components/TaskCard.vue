@@ -78,6 +78,18 @@ function onDragStart(e: DragEvent) {
 
     <div class="mt-2 flex flex-wrap items-center gap-1.5">
       <span
+        v-if="task.images.length > 0"
+        class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 text-[10px] tabular-nums"
+        :title="`${task.images.length} image${task.images.length > 1 ? 's' : ''} — open the task to view`"
+      >
+        <svg class="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <polyline points="21 15 16 10 5 21" />
+        </svg>
+        {{ task.images.length }}
+      </span>
+      <span
         v-if="linkCount > 0"
         class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-500 text-[10px] tabular-nums"
         :title="`${linkCount} link${linkCount > 1 ? 's' : ''} — open the task to click them`"

@@ -14,6 +14,7 @@ import type {
   RecapHistoryItem,
   Task,
   TaskColumn,
+  TaskImage,
   TaskPriority,
 } from '@shared/types';
 
@@ -180,4 +181,13 @@ export const api = {
 
   sessionTasks: (provider: Provider, sessionId: string) =>
     http<{ items: Task[] }>(`/api/sessions/${provider}/${sessionId}/tasks`),
+
+  uploadTaskImage: (taskId: number, dataUrl: string, name: string | null) =>
+    http<TaskImage>(`/api/tasks/${taskId}/images`, {
+      method: 'POST',
+      body: JSON.stringify({ dataUrl, name }),
+    }),
+
+  deleteTaskImage: (taskId: number, imageId: number) =>
+    http<{ ok: true }>(`/api/tasks/${taskId}/images/${imageId}`, { method: 'DELETE' }),
 };

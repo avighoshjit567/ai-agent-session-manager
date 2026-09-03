@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { api } from '../api';
 import { linkifyText } from '../lib/linkify';
-import type { Task, TaskColumn } from '@shared/types';
+import { useToast } from '../composables/useToast';
+import type { Task, TaskColumn, TaskImage } from '@shared/types';
 
 const props = defineProps<{ task: Task }>();
 const emit = defineEmits<{
@@ -10,6 +12,73 @@ const emit = defineEmits<{
   (e: 'delete'): void;
   (e: 'open-session', ref: { provider: string; sessionId: string }): void;
 }>();
+
+const toast = useToast();
+const fileInput = ref<HTMLInputElement | null>(null);
+const uploading = ref(false);
+const lightbox = ref<TaskImage | null>(null);
+
+async function uploadFile(file: File) {
+  if (!file.type.startsWith('image/')) {
+    toast.error(`${file.name || 'That file'} is not an image`);
+    return;
+  }
+  uploading.value = true;
+  try {
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result as string);
+      r.onerror = () => reject(new Error('Could not read file'));
+      r.readAsDataURL(file);
+    });
+    const img = await api.uploadTaskImage(props.task.id, dataUrl, file.name || null);
+    props.task.images.push(img);
+  } catch (e: any) {
+    toast.error(e?.message ?? 'Upload failed');
+  } finally {
+    uploading.value = false;
+  }
+}
+
+function onFilesChosen(e: Event) {
+  const input = e.target as HTMLInputElement;
+  for (const f of input.files ?? []) uploadFile(f);
+  input.value = '';
+}
+
+function onPaste(e: ClipboardEvent) {
+  const files = [...(e.clipboardData?.files ?? [])].filter((f) => f.type.startsWith('image/'));
+  if (files.length === 0) return;
+  e.preventDefault();
+  for (const f of files) uploadFile(f);
+}
+
+async function removeImage(img: TaskImage) {
+  try {
+    await api.deleteTaskImage(props.task.id, img.id);
+    const i = props.task.images.findIndex((x) => x.id === img.id);
+    if (i !== -1) props.task.images.splice(i, 1);
+    if (lightbox.value?.id === img.id) lightbox.value = null;
+  } catch (e: any) {
+    toast.error(e?.message ?? 'Failed to delete image');
+  }
+}
+
+function onKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape' && lightbox.value) {
+    e.stopPropagation();
+    lightbox.value = null;
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('paste', onPaste);
+  window.addEventListener('keydown', onKeydown, true);
+});
+onUnmounted(() => {
+  window.removeEventListener('paste', onPaste);
+  window.removeEventListener('keydown', onKeydown, true);
+});
 
 const COLUMN_LABELS: Record<TaskColumn, string> = {
   backlog: 'Backlog',
@@ -116,6 +185,44 @@ const overdue = computed(() => {
         />
         <p v-else class="text-sm text-zinc-500 italic">No description</p>
 
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] uppercase tracking-wider text-zinc-500">Images</span>
+            <button
+              class="text-[11px] px-2 py-0.5 rounded border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 disabled:opacity-50"
+              :disabled="uploading"
+              @click="fileInput?.click()"
+            >{{ uploading ? 'Uploading…' : '+ Add image' }}</button>
+            <input
+              ref="fileInput"
+              type="file"
+              accept="image/png,image/jpeg,image/gif,image/webp"
+              multiple
+              class="hidden"
+              @change="onFilesChosen"
+            />
+          </div>
+          <div v-if="task.images.length > 0" class="grid grid-cols-3 gap-2">
+            <div v-for="img in task.images" :key="img.id" class="group/img relative">
+              <img
+                :src="img.url"
+                :alt="img.originalName ?? 'task image'"
+                class="h-20 w-full object-cover rounded-lg border border-zinc-200 dark:border-zinc-800 cursor-zoom-in"
+                loading="lazy"
+                @click="lightbox = img"
+              />
+              <button
+                class="absolute top-1 right-1 h-5 w-5 rounded bg-black/60 text-white text-[10px] leading-none opacity-0 group-hover/img:opacity-100 transition-opacity hover:bg-red-500/90"
+                title="Delete image"
+                @click.stop="removeImage(img)"
+              >✕</button>
+            </div>
+          </div>
+          <p v-else class="text-xs text-zinc-500 italic">
+            No images — click “+ Add image” or paste a screenshot (⌘V)
+          </p>
+        </div>
+
         <div v-if="task.projectPath" class="text-xs text-zinc-500 truncate" :title="task.projectPath">
           📁 {{ task.projectPath }}
         </div>
@@ -139,5 +246,24 @@ const overdue = computed(() => {
         </div>
       </div>
     </div>
+
+    <Teleport to="body">
+      <div
+        v-if="lightbox"
+        class="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-6 cursor-zoom-out"
+        @click="lightbox = null"
+      >
+        <img
+          :src="lightbox.url"
+          :alt="lightbox.originalName ?? 'task image'"
+          class="max-h-full max-w-full rounded-lg shadow-2xl"
+          @click.stop
+        />
+        <div
+          v-if="lightbox.originalName"
+          class="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-black/60 text-white text-xs"
+        >{{ lightbox.originalName }}</div>
+      </div>
+    </Teleport>
   </div>
 </template>
