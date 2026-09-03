@@ -73,6 +73,7 @@ export function initSchema(d: Database.Database): void {
     }
   }
 
+
   // FTS5 cannot ALTER ADD COLUMN. If an older sessions_fts exists without a
   // column we now index (`body`, `display_name`), drop it here and flag a
   // one-time forced reindex to repopulate the columns.
@@ -130,6 +131,7 @@ export function initSchema(d: Database.Database): void {
       session_id TEXT NOT NULL,
       display_name TEXT,
       color TEXT,
+      bookmarked INTEGER NOT NULL DEFAULT 0,
       updated_at TEXT NOT NULL,
       PRIMARY KEY (provider, session_id)
     );
@@ -171,6 +173,15 @@ export function initSchema(d: Database.Database): void {
       edited_at    TEXT
     );
   `);
+
+  // session_meta migrations (table exists by now on both fresh and old DBs).
+  for (const [name, type] of [['bookmarked', 'INTEGER NOT NULL DEFAULT 0']] as const) {
+    try {
+      d.exec(`ALTER TABLE session_meta ADD COLUMN ${name} ${type}`);
+    } catch (e: any) {
+      if (!/duplicate column/i.test(e?.message ?? '')) throw e;
+    }
+  }
 }
 
 export function closeDb(): void {

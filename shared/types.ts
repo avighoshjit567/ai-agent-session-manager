@@ -33,6 +33,7 @@ export interface Session {
   // Custom name shown instead of the title; color is a palette key (see SESSION_COLORS).
   displayName: string | null;
   color: SessionColor | null;
+  bookmarked: boolean;
 }
 
 // Curated palette for per-session color labels. Stored as a key so it can be
@@ -54,6 +55,7 @@ export interface SessionMeta {
   sessionId: string;
   displayName: string | null;
   color: SessionColor | null;
+  bookmarked: boolean;
 }
 
 export interface SessionListItem extends Session {
@@ -106,6 +108,7 @@ export interface SessionFilter {
   archived?: boolean;
   hasTools?: boolean;
   hasSubagents?: boolean;
+  bookmarked?: boolean;
   q?: string;
   from?: string;
   to?: string;

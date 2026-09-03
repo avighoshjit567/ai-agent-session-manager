@@ -71,6 +71,7 @@ export async function registerApi(app: FastifyInstance): Promise<void> {
             : undefined,
         hasTools: q.hasTools === '1' || q.hasTools === 'true',
         hasSubagents: q.hasSubagents === '1' || q.hasSubagents === 'true',
+        bookmarked: q.bookmarked === '1' || q.bookmarked === 'true',
         q: q.q || undefined,
         from: q.from || undefined,
         to: q.to || undefined,
@@ -154,15 +155,21 @@ export async function registerApi(app: FastifyInstance): Promise<void> {
 
   app.put<{
     Params: { provider: Provider; sessionId: string };
-    Body: { displayName?: string | null; color?: string | null };
+    Body: { displayName?: string | null; color?: string | null; bookmarked?: boolean };
   }>('/api/sessions/:provider/:sessionId/meta', async (req, reply) => {
     const { provider, sessionId } = req.params;
     if (!getSession(provider, sessionId)) {
       reply.code(404);
       return { error: 'Session not found' };
     }
+    // Only forward fields the caller actually sent — saveMeta merges, so an
+    // absent field keeps its stored value (bookmark survives a rename etc.).
     const body = req.body ?? {};
-    return saveMeta(provider, sessionId, { displayName: body.displayName, color: body.color });
+    const input: { displayName?: string | null; color?: string | null; bookmarked?: boolean } = {};
+    if ('displayName' in body) input.displayName = body.displayName;
+    if ('color' in body) input.color = body.color;
+    if (typeof body.bookmarked === 'boolean') input.bookmarked = body.bookmarked;
+    return saveMeta(provider, sessionId, input);
   });
 
   app.post<{

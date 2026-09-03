@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import type { SessionListItem, SessionColor } from '@shared/types';
+import { api } from '../api';
 import ProviderAvatar from './ProviderAvatar.vue';
 import { highlightSnippet } from '../lib/highlight';
 import SessionIdChip from './SessionIdChip.vue';
@@ -69,6 +70,16 @@ function resumeCmd(s: SessionListItem): string {
   return s.provider === 'claude'
     ? `claude --resume ${s.sessionId}`
     : `codex resume ${s.sessionId}`;
+}
+
+async function toggleBookmark(s: SessionListItem) {
+  const next = !s.bookmarked;
+  s.bookmarked = next;
+  try {
+    await api.saveMeta(s.provider, s.sessionId, { bookmarked: next });
+  } catch {
+    s.bookmarked = !next;
+  }
 }
 </script>
 
@@ -171,14 +182,24 @@ function resumeCmd(s: SessionListItem): string {
             <span v-else class="text-zinc-600">0</span>
           </td>
           <td class="px-3 py-2.5 align-top text-right">
-            <div
-              class="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1"
-              @click.stop
-            >
+            <div class="inline-flex items-center gap-1" @click.stop>
+              <button
+                type="button"
+                :title="s.bookmarked ? 'Remove bookmark' : 'Bookmark this session'"
+                class="p-1 rounded transition-opacity"
+                :class="s.bookmarked
+                  ? 'text-amber-400 hover:text-amber-500'
+                  : 'text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-200/60 dark:hover:bg-zinc-800 opacity-0 group-hover:opacity-100'"
+                @click.stop="toggleBookmark(s)"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" :fill="s.bookmarked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+              </button>
               <button
                 type="button"
                 title="Rename / set color"
-                class="p-1 rounded text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-200/60 dark:hover:bg-zinc-800"
+                class="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-200/60 dark:hover:bg-zinc-800"
                 @click.stop="openEditor(s, $event)"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5">
@@ -186,7 +207,9 @@ function resumeCmd(s: SessionListItem): string {
                   <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
                 </svg>
               </button>
-              <CopyButton :value="resumeCmd(s)" label="resume command" />
+              <span class="opacity-0 group-hover:opacity-100 transition-opacity">
+                <CopyButton :value="resumeCmd(s)" label="resume command" />
+              </span>
             </div>
           </td>
         </tr>

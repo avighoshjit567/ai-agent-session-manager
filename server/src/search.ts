@@ -1,3 +1,4 @@
+import type Database from 'better-sqlite3';
 import { getDb } from './db.js';
 import type { Session, SessionFilter, SessionListItem } from '../../shared/types.js';
 
@@ -16,15 +17,18 @@ const COLS = `
   s.cache_creation_tokens AS cacheCreationTokens,
   s.last_context_tokens AS lastContextTokens,
   s.context_window AS contextWindow,
-  m.display_name AS displayName, m.color AS color
+  m.display_name AS displayName, m.color AS color,
+  COALESCE(m.bookmarked, 0) AS bookmarked
 `;
 
 // Overlay metadata (custom name + color) lives in session_meta; join it into
 // every read so the list, detail, and dashboard all carry it.
 const META_JOIN = `LEFT JOIN session_meta m ON m.provider = s.provider AND m.session_id = s.session_id`;
 
-export function listSessions(filter: SessionFilter): { items: SessionListItem[]; total: number } {
-  const db = getDb();
+export function listSessions(
+  filter: SessionFilter,
+  db: Database.Database = getDb(),
+): { items: SessionListItem[]; total: number } {
   const where: string[] = [];
   const args: Record<string, any> = {};
 
@@ -49,6 +53,9 @@ export function listSessions(filter: SessionFilter): { items: SessionListItem[];
   }
   if (filter.hasSubagents) {
     where.push('s.has_subagents = 1');
+  }
+  if (filter.bookmarked) {
+    where.push('m.bookmarked = 1');
   }
   if (filter.from) {
     where.push('(s.updated_at >= @from OR s.created_at >= @from)');
@@ -80,7 +87,7 @@ export function listSessions(filter: SessionFilter): { items: SessionListItem[];
 
   const totalRow = db
     .prepare(
-      `SELECT COUNT(*) AS c FROM sessions s ${joinFts} ${whereSql}`,
+      `SELECT COUNT(*) AS c FROM sessions s ${META_JOIN} ${joinFts} ${whereSql}`,
     )
     .get(args) as { c: number };
 
@@ -220,5 +227,6 @@ function toSession(r: any): Session {
     contextWindow: r.contextWindow ?? null,
     displayName: r.displayName ?? null,
     color: r.color ?? null,
+    bookmarked: !!r.bookmarked,
   };
 }

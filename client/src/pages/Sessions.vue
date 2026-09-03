@@ -21,6 +21,7 @@ const filter = ref<SessionFilter>({
   q: undefined,
   hasTools: false,
   hasSubagents: false,
+  bookmarked: false,
   archived: undefined,
 });
 
@@ -32,6 +33,7 @@ function syncFromQuery() {
   filter.value.q = (q.q as string) || undefined;
   filter.value.hasTools = q.hasTools === '1' || q.hasTools === 'true';
   filter.value.hasSubagents = q.hasSubagents === '1' || q.hasSubagents === 'true';
+  filter.value.bookmarked = q.bookmarked === '1' || q.bookmarked === 'true';
   if (q.archived === '1' || q.archived === 'true') filter.value.archived = true;
   else if (q.archived === '0' || q.archived === 'false') filter.value.archived = false;
   else filter.value.archived = undefined;
@@ -58,6 +60,7 @@ function apply() {
       q: filter.value.q,
       hasTools: filter.value.hasTools ? '1' : undefined,
       hasSubagents: filter.value.hasSubagents ? '1' : undefined,
+      bookmarked: filter.value.bookmarked ? '1' : undefined,
       archived:
         filter.value.archived === true
           ? '1'
@@ -76,6 +79,7 @@ function reset() {
     q: undefined,
     hasTools: false,
     hasSubagents: false,
+    bookmarked: false,
     archived: undefined,
   };
   apply();
@@ -98,6 +102,7 @@ const hasActiveFilters = computed(() => {
     !!f.q ||
     f.hasTools ||
     f.hasSubagents ||
+    f.bookmarked ||
     f.archived !== undefined;
 });
 
@@ -182,6 +187,15 @@ function prev() {
         <label class="inline-flex items-center gap-1.5 cursor-pointer">
           <input type="checkbox" v-model="filter.hasSubagents" @change="apply" class="accent-violet-500" />
           Has subagents
+        </label>
+        <label class="inline-flex items-center gap-1.5 cursor-pointer">
+          <input type="checkbox" v-model="filter.bookmarked" @change="apply" class="accent-amber-500" />
+          <span class="inline-flex items-center gap-1">
+            <svg viewBox="0 0 24 24" fill="currentColor" class="h-3 w-3 text-amber-400">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+            Bookmarked
+          </span>
         </label>
         <label class="inline-flex items-center gap-1.5 cursor-pointer">
           <input

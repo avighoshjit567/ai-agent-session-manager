@@ -89,6 +89,7 @@ export function listCodexThreads(): Array<{ session: Session; mtime: number }> {
         contextWindow: null,
         displayName: null,
         color: null,
+        bookmarked: false,
       };
       return { session, mtime };
     });

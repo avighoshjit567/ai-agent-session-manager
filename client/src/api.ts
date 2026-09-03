@@ -132,7 +132,7 @@ export const api = {
   saveMeta: (
     provider: Provider,
     sessionId: string,
-    meta: { displayName?: string | null; color?: SessionColor | null },
+    meta: { displayName?: string | null; color?: SessionColor | null; bookmarked?: boolean },
   ) =>
     http<SessionMeta>(`/api/sessions/${provider}/${sessionId}/meta`, {
       method: 'PUT',
