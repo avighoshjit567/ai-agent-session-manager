@@ -1,14 +1,36 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { api } from '../api';
 import SessionList from '../components/SessionList.vue';
-import type { Session, ProjectSummary } from '@shared/types';
+import { TASK_COLUMNS, type Session, type ProjectSummary, type Task, type TaskColumn } from '@shared/types';
 
 const loading = ref(true);
 const totals = ref({ total: 0, claude: 0, codex: 0 });
 const recent = ref<Session[]>([]);
 const active = ref<Session[]>([]);
 const topProjects = ref<ProjectSummary[]>([]);
+const tasks = ref<Task[]>([]);
+
+const COLUMN_LABELS: Record<TaskColumn, string> = {
+  backlog: 'Backlog',
+  todo: 'To Do',
+  in_progress: 'In Progress',
+  done: 'Done',
+};
+
+const taskCounts = computed(() =>
+  TASK_COLUMNS.map((c) => ({
+    column: c,
+    label: COLUMN_LABELS[c],
+    count: tasks.value.filter((t) => t.column === c).length,
+  })),
+);
+
+const inProgress = computed(() =>
+  tasks.value
+    .filter((t) => t.column === 'in_progress')
+    .sort((a, b) => a.position - b.position),
+);
 
 async function load() {
   loading.value = true;
@@ -20,6 +42,11 @@ async function load() {
     topProjects.value = d.topProjects;
   } finally {
     loading.value = false;
+  }
+  try {
+    tasks.value = (await api.tasks()).items;
+  } catch {
+    tasks.value = [];
   }
 }
 
@@ -67,6 +94,39 @@ function shortPath(p: string): string {
           Active (last hour)
         </div>
         <div class="text-3xl font-semibold text-zinc-900 dark:text-zinc-100 mt-1 tabular-nums">{{ active.length }}</div>
+      </div>
+    </section>
+
+    <section v-if="tasks.length > 0" class="mb-8">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-sm font-medium text-zinc-700 dark:text-zinc-300">Task board</h2>
+        <RouterLink :to="{ name: 'board' }" class="text-[11px] text-violet-500 hover:text-violet-400">
+          Open board →
+        </RouterLink>
+      </div>
+      <div class="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/30 p-3">
+        <div class="grid grid-cols-4 gap-2 mb-3">
+          <RouterLink
+            v-for="c in taskCounts"
+            :key="c.column"
+            :to="{ name: 'board' }"
+            class="text-center py-2 rounded-md bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors"
+          >
+            <div class="text-lg font-semibold text-zinc-900 dark:text-zinc-100 tabular-nums">{{ c.count }}</div>
+            <div class="text-[10px] uppercase tracking-wider text-zinc-500 mt-0.5">{{ c.label }}</div>
+          </RouterLink>
+        </div>
+        <div v-if="inProgress.length > 0" class="space-y-1">
+          <div class="text-[11px] uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
+            <span class="h-1.5 w-1.5 rounded-full bg-amber-400" /> In progress
+          </div>
+          <RouterLink
+            v-for="t in inProgress"
+            :key="t.id"
+            :to="{ name: 'board' }"
+            class="block text-sm text-zinc-800 dark:text-zinc-200 truncate hover:text-violet-500"
+          >{{ t.title }}</RouterLink>
+        </div>
       </div>
     </section>
 

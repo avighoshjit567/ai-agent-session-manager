@@ -12,7 +12,20 @@ import type {
   DailyRecap,
   RecapDay,
   RecapHistoryItem,
+  Task,
+  TaskColumn,
+  TaskPriority,
 } from '@shared/types';
+
+export interface TaskInput {
+  title?: string;
+  description?: string;
+  column?: TaskColumn;
+  priority?: TaskPriority;
+  tags?: string[];
+  dueDate?: string | null;
+  projectPath?: string | null;
+}
 
 const BASE = '';
 
@@ -138,4 +151,33 @@ export const api = {
     }),
 
   listRecaps: () => http<{ items: RecapHistoryItem[] }>(`/api/recaps`),
+
+  tasks: (projectPath?: string) =>
+    http<{ items: Task[] }>(
+      `/api/tasks${projectPath ? '?projectPath=' + encodeURIComponent(projectPath) : ''}`,
+    ),
+
+  createTask: (input: TaskInput) =>
+    http<Task>('/api/tasks', { method: 'POST', body: JSON.stringify(input) }),
+
+  updateTask: (id: number, patch: TaskInput) =>
+    http<Task>(`/api/tasks/${id}`, { method: 'PUT', body: JSON.stringify(patch) }),
+
+  moveTask: (id: number, column: TaskColumn, position: number) =>
+    http<Task>(`/api/tasks/${id}/move`, {
+      method: 'PUT',
+      body: JSON.stringify({ column, position }),
+    }),
+
+  deleteTask: (id: number) =>
+    http<{ ok: true }>(`/api/tasks/${id}`, { method: 'DELETE' }),
+
+  setTaskSessions: (id: number, sessions: Array<{ provider: Provider; sessionId: string }>) =>
+    http<Task>(`/api/tasks/${id}/sessions`, {
+      method: 'PUT',
+      body: JSON.stringify({ sessions }),
+    }),
+
+  sessionTasks: (provider: Provider, sessionId: string) =>
+    http<{ items: Task[] }>(`/api/sessions/${provider}/${sessionId}/tasks`),
 };

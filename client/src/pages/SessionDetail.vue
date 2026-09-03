@@ -9,6 +9,7 @@ import CopyButton from '../components/CopyButton.vue';
 import ContextBar from '../components/ContextBar.vue';
 import TokenBreakdown from '../components/TokenBreakdown.vue';
 import SessionLabelEditor from '../components/SessionLabelEditor.vue';
+import SessionTasksCard from '../components/SessionTasksCard.vue';
 import { dotClass } from '../lib/sessionColor';
 import type { SessionColor } from '@shared/types';
 import { useToast } from '../composables/useToast';
@@ -326,6 +327,12 @@ const stats = computed(() => {
               <div class="text-zinc-600 truncate font-mono pt-1" :title="session.sourcePath">{{ session.sourcePath }}</div>
             </div>
           </div>
+
+          <SessionTasksCard
+            :provider="session.provider"
+            :session-id="session.sessionId"
+            :session-name="headerTitle"
+          />
 
           <div v-if="note" class="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/30 p-3 space-y-2">
             <div class="flex items-center justify-between">

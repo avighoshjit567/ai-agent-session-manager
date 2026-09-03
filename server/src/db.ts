@@ -134,6 +134,34 @@ export function initSchema(d: Database.Database): void {
       PRIMARY KEY (provider, session_id)
     );
 
+    -- Kanban task board. User-owned data like notes; survives reindexing.
+    -- Column identity (backlog/todo/in_progress/done) lives in code.
+    -- \`position\` is a float so a drop between two cards is one midpoint UPDATE.
+    CREATE TABLE IF NOT EXISTS tasks (
+      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      title        TEXT NOT NULL,
+      description  TEXT NOT NULL DEFAULT '',
+      board_column TEXT NOT NULL DEFAULT 'backlog',
+      position     REAL NOT NULL,
+      priority     TEXT NOT NULL DEFAULT 'medium',
+      tags         TEXT NOT NULL DEFAULT '[]',
+      due_date     TEXT,
+      project_path TEXT,
+      created_at   TEXT NOT NULL,
+      updated_at   TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_tasks_column ON tasks(board_column, position);
+
+    CREATE TABLE IF NOT EXISTS task_sessions (
+      task_id    INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      provider   TEXT NOT NULL,
+      session_id TEXT NOT NULL,
+      PRIMARY KEY (task_id, provider, session_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_task_sessions_session ON task_sessions(provider, session_id);
+
     CREATE TABLE IF NOT EXISTS daily_recaps (
       date         TEXT PRIMARY KEY,
       content      TEXT NOT NULL,

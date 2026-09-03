@@ -161,3 +161,34 @@ export interface RecapHistoryItem {
   generatedAt: string;
   editedAt: string | null;
 }
+
+// ---- Kanban task board ----
+
+export const TASK_COLUMNS = ['backlog', 'todo', 'in_progress', 'done'] as const;
+export type TaskColumn = (typeof TASK_COLUMNS)[number];
+
+export const TASK_PRIORITIES = ['low', 'medium', 'high'] as const;
+export type TaskPriority = (typeof TASK_PRIORITIES)[number];
+
+export interface TaskSessionRef {
+  provider: Provider;
+  sessionId: string;
+  // Resolved for display when listing: session_meta.display_name, else the
+  // session title, else null (client falls back to a shortened id).
+  name?: string | null;
+}
+
+export interface Task {
+  id: number;
+  title: string;
+  description: string;
+  column: TaskColumn;
+  position: number;
+  priority: TaskPriority;
+  tags: string[];
+  dueDate: string | null; // YYYY-MM-DD
+  projectPath: string | null;
+  createdAt: string;
+  updatedAt: string;
+  sessions: TaskSessionRef[];
+}

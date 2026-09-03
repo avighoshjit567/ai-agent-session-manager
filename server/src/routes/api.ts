@@ -30,7 +30,23 @@ import {
   isValidDateString,
   NoSessionsError,
 } from '../recap.js';
-import type { Provider, SessionFilter, AppSettings } from '../../../shared/types.js';
+import {
+  listTasks,
+  createTask,
+  updateTask,
+  moveTask,
+  deleteTask,
+  setTaskSessions,
+  tasksForSession,
+  type CreateTaskInput,
+  type UpdateTaskInput,
+} from '../tasks.js';
+import type {
+  Provider,
+  SessionFilter,
+  AppSettings,
+  TaskColumn,
+} from '../../../shared/types.js';
 
 export async function registerApi(app: FastifyInstance): Promise<void> {
   app.get('/api/health', async () => ({ ok: true }));
@@ -317,4 +333,80 @@ export async function registerApi(app: FastifyInstance): Promise<void> {
   );
 
   app.get('/api/recaps', async () => ({ items: listRecaps() }));
+
+  // ---- Kanban task board ----
+
+  app.get<{ Querystring: { projectPath?: string } }>('/api/tasks', async (req) => ({
+    items: listTasks(req.query.projectPath || undefined),
+  }));
+
+  app.post<{ Body: CreateTaskInput }>('/api/tasks', async (req, reply) => {
+    try {
+      return createTask(req.body ?? ({} as CreateTaskInput));
+    } catch (e: any) {
+      reply.code(400);
+      return { error: e?.message ?? 'Invalid task' };
+    }
+  });
+
+  app.put<{ Params: { id: string }; Body: UpdateTaskInput }>(
+    '/api/tasks/:id',
+    async (req, reply) => {
+      try {
+        const task = updateTask(Number(req.params.id), req.body ?? {});
+        if (!task) {
+          reply.code(404);
+          return { error: 'Task not found' };
+        }
+        return task;
+      } catch (e: any) {
+        reply.code(400);
+        return { error: e?.message ?? 'Invalid task' };
+      }
+    },
+  );
+
+  app.put<{ Params: { id: string }; Body: { column: TaskColumn; position: number } }>(
+    '/api/tasks/:id/move',
+    async (req, reply) => {
+      try {
+        const { column, position } = req.body ?? ({} as any);
+        const task = moveTask(Number(req.params.id), column, position);
+        if (!task) {
+          reply.code(404);
+          return { error: 'Task not found' };
+        }
+        return task;
+      } catch (e: any) {
+        reply.code(400);
+        return { error: e?.message ?? 'Invalid move' };
+      }
+    },
+  );
+
+  app.delete<{ Params: { id: string } }>('/api/tasks/:id', async (req, reply) => {
+    if (!deleteTask(Number(req.params.id))) {
+      reply.code(404);
+      return { error: 'Task not found' };
+    }
+    return { ok: true };
+  });
+
+  app.put<{
+    Params: { id: string };
+    Body: { sessions?: Array<{ provider: Provider; sessionId: string }> };
+  }>('/api/tasks/:id/sessions', async (req, reply) => {
+    const refs = Array.isArray(req.body?.sessions) ? req.body.sessions : [];
+    const task = setTaskSessions(Number(req.params.id), refs);
+    if (!task) {
+      reply.code(404);
+      return { error: 'Task not found' };
+    }
+    return task;
+  });
+
+  app.get<{ Params: { provider: Provider; sessionId: string } }>(
+    '/api/sessions/:provider/:sessionId/tasks',
+    async (req) => ({ items: tasksForSession(req.params.provider, req.params.sessionId) }),
+  );
 }
