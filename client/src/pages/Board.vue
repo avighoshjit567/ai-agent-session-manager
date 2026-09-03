@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from '../api';
 import TaskCard from '../components/TaskCard.vue';
+import TaskDetailModal from '../components/TaskDetailModal.vue';
 import TaskEditModal from '../components/TaskEditModal.vue';
 import { useToast } from '../composables/useToast';
 import {
@@ -21,6 +22,7 @@ const projectFilter = ref('');
 const loading = ref(true);
 
 const editing = ref<{ task: Task | null; column: TaskColumn } | null>(null);
+const viewing = ref<Task | null>(null);
 const dragOverColumn = ref<TaskColumn | null>(null);
 
 const COLUMN_LABELS: Record<TaskColumn, string> = {
@@ -108,9 +110,16 @@ async function removeTask(task: Task) {
   try {
     await api.deleteTask(task.id);
     tasks.value = tasks.value.filter((t) => t.id !== task.id);
+    if (viewing.value?.id === task.id) viewing.value = null;
   } catch (e: any) {
     toast.error(e?.message ?? 'Failed to delete task');
   }
+}
+
+function editFromDetail() {
+  if (!viewing.value) return;
+  editing.value = { task: viewing.value, column: viewing.value.column };
+  viewing.value = null;
 }
 
 function openSession(ref: { provider: string; sessionId: string }) {
@@ -185,7 +194,7 @@ function onSaved() {
             <div @dragover.prevent @drop="onDrop($event, c, i)">
               <TaskCard
                 :task="t"
-                @edit="editing = { task: t, column: c }"
+                @edit="viewing = t"
                 @move="(col) => moveToColumn(t, col)"
                 @delete="removeTask(t)"
                 @open-session="openSession"
@@ -201,6 +210,15 @@ function onSaved() {
         </div>
       </section>
     </div>
+
+    <TaskDetailModal
+      v-if="viewing"
+      :task="viewing"
+      @close="viewing = null"
+      @edit="editFromDetail"
+      @delete="removeTask(viewing)"
+      @open-session="openSession"
+    />
 
     <TaskEditModal
       v-if="editing"

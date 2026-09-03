@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { stripUrls, countUrls } from '../lib/linkify';
 import { TASK_COLUMNS, type Task, type TaskColumn } from '@shared/types';
 
 const props = defineProps<{ task: Task }>();
@@ -31,6 +32,9 @@ const priorityClass = computed(() => {
       return 'bg-amber-500/10 text-amber-500 border-amber-500/30';
   }
 });
+
+const previewText = computed(() => stripUrls(props.task.description));
+const linkCount = computed(() => countUrls(props.task.description));
 
 const overdue = computed(() => {
   if (!props.task.dueDate || props.task.column === 'done') return false;
@@ -68,11 +72,22 @@ function onDragStart(e: DragEvent) {
       >⋯</button>
     </div>
 
-    <p v-if="task.description" class="mt-1 text-xs text-zinc-500 line-clamp-2">
-      {{ task.description }}
+    <p v-if="previewText" class="mt-1 text-xs text-zinc-500 line-clamp-2">
+      {{ previewText }}
     </p>
 
     <div class="mt-2 flex flex-wrap items-center gap-1.5">
+      <span
+        v-if="linkCount > 0"
+        class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-500 text-[10px] tabular-nums"
+        :title="`${linkCount} link${linkCount > 1 ? 's' : ''} — open the task to click them`"
+      >
+        <svg class="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+        </svg>
+        {{ linkCount }}
+      </span>
       <span
         class="inline-flex items-center px-1.5 py-0.5 rounded border text-[10px] font-medium uppercase tracking-wide"
         :class="priorityClass"
